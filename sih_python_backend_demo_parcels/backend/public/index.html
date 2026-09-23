@@ -1,0 +1,2942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UrbanFabric — Land Record Intelligence Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+:root{
+  --void:#f5f3ff; --bg1:#ffffff; --bg2:#f1edff;
+  --panel:rgba(255,255,255,.72); --panel-solid:#ffffff; --panel-hi:rgba(99,102,241,.07);
+  --line:rgba(49,46,98,.12); --line-strong:rgba(49,46,98,.22);
+  --ink:#231f3d; --ink-soft:#5d5a7a; --ink-mute:#8b87a5;
+  --blue:#5b21b6; --blue-soft:rgba(91,33,182,.13);
+  --cyan:#7c3aed; --cyan-soft:rgba(124,58,237,.14);
+  --emerald:#0da96e; --emerald-soft:rgba(13,169,110,.14);
+  --amber:#ea9a0a; --amber-soft:rgba(234,154,10,.15);
+  --red:#ef4444; --red-soft:rgba(239,68,68,.13);
+  --purple:#6d28d9; --purple-soft:rgba(109,40,217,.14);
+  --gray-soft:rgba(49,46,98,.08);
+  --grad1:linear-gradient(135deg,var(--blue),var(--purple));
+  --grad2:linear-gradient(135deg,var(--cyan),var(--emerald));
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Manrope',sans-serif;background:var(--void);color:var(--ink);font-size:14px;line-height:1.5;min-height:100vh;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.display{font-family:'Sora',sans-serif;}
+button{font-family:inherit;cursor:pointer;}
+input,select{font-family:inherit;}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:rgba(49,46,98,.22);border-radius:4px;}
+::selection{background:var(--blue-soft);}
+
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(circle at 10% 8%,rgba(91,33,182,.10),transparent 40%),
+    radial-gradient(circle at 90% 14%,rgba(124,58,237,.10),transparent 42%),
+    radial-gradient(circle at 84% 82%,rgba(109,40,217,.10),transparent 46%),
+    radial-gradient(circle at 12% 88%,rgba(109,40,217,.06),transparent 40%),
+    linear-gradient(rgba(49,46,98,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(49,46,98,.035) 1px,transparent 1px);
+  background-size:auto,auto,auto,auto,46px 46px,46px 46px;
+}
+
+/* ================= SHARED ================= */
+.glass{background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);transition:border-color .2s;position:relative;}
+.card:hover{border-color:var(--line-strong);}
+.grid{display:grid;gap:14px;}
+.g4{grid-template-columns:repeat(4,1fr);} .g3{grid-template-columns:repeat(3,1fr);} .g2{grid-template-columns:repeat(2,1fr);}
+@media(max-width:1200px){.g4{grid-template-columns:repeat(2,1fr);} .g3{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.g4,.g3,.g2{grid-template-columns:1fr;}}
+
+.section-title{font-family:'Sora';font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;color:var(--ink);}
+.section-title .hint{font-size:11px;color:var(--ink-mute);font-weight:500;font-family:'IBM Plex Mono';}
+
+.badge{font-family:'IBM Plex Mono';font-size:10.5px;padding:3px 9px;border-radius:20px;font-weight:600;display:inline-flex;align-items:center;gap:5px;border:1px solid transparent;white-space:nowrap;}
+.badge.green{background:var(--emerald-soft);color:var(--emerald);border-color:rgba(39,201,106,.35);}
+.badge.amber{background:var(--amber-soft);color:var(--amber);border-color:rgba(245,166,35,.35);}
+.badge.red{background:var(--red-soft);color:var(--red);border-color:rgba(244,82,90,.35);}
+.badge.purple{background:var(--purple-soft);color:var(--purple);border-color:rgba(171,139,250,.35);}
+.badge.gray{background:var(--gray-soft);color:var(--ink-soft);border-color:var(--line);}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0;}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 currentColor;opacity:1;}70%{box-shadow:0 0 0 7px transparent;opacity:.4;}100%{box-shadow:0 0 0 0 transparent;opacity:1;}}
+.dot.live{animation:pulseDot 1.8s infinite;}
+
+.btn{font-size:12.5px;font-weight:600;padding:9px 15px;border-radius:8px;border:1px solid var(--line);background:rgba(49,46,98,.03);color:var(--ink);transition:all .15s;}
+.btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft);}
+.btn.primary{background:var(--grad1);border-color:transparent;color:#fff;}
+.btn.primary:hover{filter:brightness(1.08);}
+.btn.green{background:transparent;border-color:rgba(13,169,110,.5);color:var(--emerald);}
+.btn.green:hover{background:var(--emerald-soft);}
+.btn.red{background:transparent;border-color:rgba(239,68,68,.5);color:var(--red);}
+.btn.red:hover{background:var(--red-soft);}
+.btn.amber{background:transparent;border-color:rgba(234,154,10,.5);color:var(--amber);}
+.btn.amber:hover{background:var(--amber-soft);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;}
+
+table{width:100%;border-collapse:collapse;font-size:12.6px;}
+th{text-align:left;font-family:'IBM Plex Mono';font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-mute);padding:10px 12px;border-bottom:1px solid var(--line);}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle;color:var(--ink);}
+tr.row-click{cursor:pointer;transition:background .12s;}
+tr.row-click:hover{background:rgba(76,141,255,.06);}
+
+.progress{height:6px;background:rgba(150,180,205,.15);border-radius:3px;overflow:hidden;margin-top:8px;}
+.progress .fill{height:100%;border-radius:3px;transition:width 1s ease;}
+
+.legal-note{font-size:11.3px;color:var(--ink-mute);background:rgba(245,166,35,.06);border:1px dashed rgba(245,166,35,.3);border-radius:8px;padding:9px 12px;margin-top:12px;line-height:1.6;}
+
+.kv{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+.kv .k{color:var(--ink-soft);} .kv .v{font-family:'IBM Plex Mono';font-weight:600;text-align:right;color:var(--ink);}
+.empty-hint{font-size:12px;color:var(--ink-mute);text-align:center;padding:40px 10px;}
+hr.div{border:none;border-top:1px solid var(--line);margin:18px 0;}
+
+/* ================= APP SHELL ================= */
+#appRoot{display:none;}
+#appRoot.revealed{display:block;}
+.shell{display:grid;grid-template-columns:246px 1fr;min-height:100vh;position:relative;z-index:1;}
+
+.sidebar{background:linear-gradient(180deg,#ffffff,var(--bg2));border-right:1px solid var(--line);padding:18px 12px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 18px;border-bottom:1px solid var(--line);margin-bottom:14px;}
+.brand .mk{width:26px;height:26px;border-radius:7px;background:var(--grad1);position:relative;flex-shrink:0;box-shadow:0 0 16px rgba(91,33,182,.4);}
+.brand .mk::after{content:'';position:absolute;inset:6px;background:rgba(255,255,255,.9);border-radius:2px;}
+.brand b{font-family:'Sora';font-size:15px;color:var(--ink);font-weight:700;}
+.brand span{display:block;font-size:9.5px;color:var(--ink-mute);font-family:'IBM Plex Mono';letter-spacing:.03em;}
+.navgroup{font-family:'IBM Plex Mono';font-size:9.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-mute);margin:16px 10px 7px;}
+.navitem{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;font-size:13px;color:var(--ink-soft);cursor:pointer;transition:all .15s;margin-bottom:2px;position:relative;}
+.navitem:hover{background:var(--panel-hi);color:var(--ink);}
+.navitem.active{background:var(--blue-soft);color:var(--blue);font-weight:600;}
+.navitem.active::before{content:'';position:absolute;left:-12px;top:8px;bottom:8px;width:3px;border-radius:3px;background:var(--grad1);}
+.navitem .ic{width:16px;text-align:center;flex-shrink:0;opacity:.85;}
+.navitem .badge{margin-left:auto;font-size:9.5px;padding:2px 7px;}
+.sidebar-foot{margin-top:auto;padding:12px 8px 4px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-mute);font-family:'IBM Plex Mono';display:flex;align-items:center;gap:8px;}
+
+.main{padding:20px 26px 70px;max-width:1520px;position:relative;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap;position:sticky;top:0;z-index:8;background:#f5f3ff;padding:10px 0 14px;margin-top:-10px;}
+.topbar h1{font-family:'Sora';font-size:20px;font-weight:700;color:var(--ink);}
+.topbar .sub{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.iconbtn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line);background:rgba(49,46,98,.03);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);transition:all .15s;}
+.iconbtn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-soft);}
+.iconbtn svg{width:16px;height:16px;}
+.clockchip{font-family:'IBM Plex Mono';font-size:11.5px;color:var(--ink-soft);border:1px solid var(--line);padding:8px 12px;border-radius:20px;background:#fff;}
+.role-pill{font-family:'IBM Plex Mono';font-size:11px;background:#fff;border:1px solid var(--line);padding:7px 13px 7px 10px;border-radius:20px;color:var(--ink-soft);display:flex;align-items:center;gap:7px;}
+
+.page{display:none;}
+.page.active{display:block;animation:pageIn .45s ease both;}
+@keyframes pageIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ================= KPI / GAUGES ================= */
+.kpi-card{overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent,var(--blue));border-radius:14px 0 0 14px;}
+.kpi-card .num{font-family:'Sora';font-size:30px;font-weight:700;letter-spacing:-.01em;}
+.kpi-card .label{font-size:11.5px;color:var(--ink-soft);margin-top:6px;}
+.kpi-card .trend{font-size:10.8px;margin-top:9px;font-family:'IBM Plex Mono';color:var(--ink-mute);}
+
+.gauge-card{display:flex;flex-direction:column;align-items:center;text-align:center;padding:20px 16px;}
+.gauge-card svg{display:block;}
+.gauge-card .glabel{font-size:12.5px;font-weight:600;margin-top:10px;color:var(--ink);}
+.gauge-card .gsub{font-size:10.8px;color:var(--ink-mute);margin-top:2px;}
+
+/* ================= DASHBOARD EXTRAS ================= */
+.ward-tile{border-radius:12px;padding:13px 15px;border:1px solid var(--line);position:relative;overflow:hidden;}
+.ward-tile.risk-high{border-color:rgba(244,82,90,.4);background:rgba(244,82,90,.07);}
+.ward-tile.risk-medium{border-color:rgba(245,166,35,.4);background:rgba(245,166,35,.06);}
+.ward-tile.risk-low{border-color:rgba(39,201,106,.35);background:rgba(39,201,106,.05);}
+
+.feed-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:12.5px;}
+.feed-item:last-child{border-bottom:none;}
+.feed-item .ftime{font-family:'IBM Plex Mono';color:var(--ink-mute);width:48px;flex-shrink:0;padding-top:2px;font-size:11px;}
+.feed-item .fbody b{font-weight:600;}
+.feed-item .fdetail{font-size:11px;color:var(--ink-mute);margin-top:2px;}
+
+.insight-row{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);}
+.insight-row:last-child{border-bottom:none;}
+.insight-row .iic{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;}
+.insight-row .itext{font-size:12.6px;color:var(--ink-soft);line-height:1.55;}
+.insight-row .itext b{color:var(--ink);font-weight:600;}
+
+/* ================= GIS WORKSPACE ================= */
+.gis-workspace{display:grid;grid-template-columns:290px 1fr 350px;gap:18px;align-items:stretch;}
+@media(max-width:1300px){.gis-workspace{grid-template-columns:260px 1fr;} .gis-workspace .gis-right{grid-column:1/-1;}}
+@media(max-width:900px){.gis-workspace{grid-template-columns:1fr;align-items:start;}}
+.gis-workspace .card{box-shadow:0 10px 28px rgba(91,33,182,.07);transition:box-shadow .2s;}
+.gis-left,.gis-center,.gis-right{display:flex;flex-direction:column;min-height:0;}
+.gis-left>.card,.gis-right>.card{height:100%;box-sizing:border-box;display:flex;flex-direction:column;min-height:0;}
+.gis-center>.map-panel{flex:1;height:100%;box-sizing:border-box;}
+@media(max-width:900px){.gis-left>.card,.gis-right>.card,.gis-center>.map-panel{height:auto;}}
+.gis-workspace #parcelSearch{transition:border-color .15s,box-shadow .15s;}
+.gis-workspace #parcelSearch:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft);}
+
+.filter-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+.filter-chip{font-size:11px;font-family:'IBM Plex Mono';padding:5px 10px;border-radius:14px;border:1px solid var(--line);color:var(--ink-soft);cursor:pointer;transition:all .15s;}
+.filter-chip.active{background:var(--grad1);border-color:transparent;color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(91,33,182,.28);}
+
+.parcel-list{flex:1;min-height:200px;max-height:560px;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+@media(max-width:900px){.parcel-list{flex:none;}}
+.parcel-row{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:11px;padding:10px 12px;cursor:pointer;transition:all .15s;}
+.parcel-row:hover{border-color:var(--line-strong);background:var(--panel-hi);transform:translateY(-1px);box-shadow:0 6px 16px rgba(49,46,98,.1);}
+.parcel-row[data-status="verified"]{border-left-color:var(--emerald);}
+.parcel-row[data-status="review"]{border-left-color:var(--amber);}
+.parcel-row[data-status="conflict"]{border-left-color:var(--red);}
+.parcel-row[data-status="ai-change"]{border-left-color:var(--purple);}
+.parcel-row.selected{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 6px 16px rgba(91,33,182,.14);}
+.parcel-row .pr-top{display:flex;justify-content:space-between;align-items:center;font-size:12px;}
+.parcel-row .pr-id{font-family:'IBM Plex Mono';font-weight:600;}
+.parcel-row .pr-meta{font-size:11px;color:var(--ink-mute);margin-top:3px;}
+.parcel-row .pr-bottom{display:flex;justify-content:space-between;font-size:10.5px;font-family:'IBM Plex Mono';color:var(--ink-soft);margin-top:6px;}
+
+.map-panel{background:radial-gradient(circle at 30% 20%,rgba(91,33,182,.08),transparent 55%),var(--panel-solid);border:1px solid var(--line);border-radius:14px;padding:14px;position:relative;overflow:hidden;}
+.map-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad1);}
+.map-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.layer-chip{font-family:'IBM Plex Mono';font-size:10.8px;color:var(--ink-soft);border:1px solid var(--line);padding:5px 11px;border-radius:16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .15s;}
+.layer-chip.active{background:var(--cyan-soft);border-color:var(--cyan);color:#5b21b6;font-weight:600;}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;font-size:10.5px;color:var(--ink-soft);}
+.legend .li{display:flex;align-items:center;gap:5px;background:rgba(49,46,98,.04);border:1px solid var(--line);padding:4px 10px;border-radius:20px;}
+svg.gis text{font-family:'IBM Plex Mono';font-size:8px;fill:var(--ink-mute);}
+.parcel-shape{cursor:pointer;transition:opacity .15s,stroke-width .15s,filter .15s;}
+.parcel-shape:hover{opacity:.9;filter:drop-shadow(0 4px 10px rgba(49,46,98,.25));}
+.parcel-shape.selected{stroke:#231f3d;stroke-width:2.5;}
+
+.detail-panel{padding:18px;max-height:640px;overflow-y:auto;position:relative;}
+.gis-workspace .detail-panel{max-height:none;flex:1;min-height:0;}
+#page-harmonization .grid.g2{align-items:stretch;}
+#page-harmonization .grid.g2>div{display:flex;flex-direction:column;}
+#page-harmonization .grid.g2>div>.card{flex:1;box-sizing:border-box;}
+.detail-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--grad1);border-radius:14px 14px 0 0;}
+.detail-panel h3{font-family:'Sora';font-size:16px;margin-bottom:2px;}
+.detail-panel .sub{font-size:11px;color:var(--ink-mute);font-family:'IBM Plex Mono';margin-bottom:14px;}
+.tabbar{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;}
+.tabbtn{font-size:11.8px;padding:8px 10px;border-radius:8px 8px 0 0;color:var(--ink-mute);border-bottom:2px solid transparent;}
+.tabbtn.active{color:var(--cyan);border-color:var(--cyan);font-weight:600;}
+.tabcontent{display:none;} .tabcontent.active{display:block;}
+
+.evidence-item{border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:8px;font-size:12px;color:var(--ink-soft);}
+.evidence-item .top{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px;}
+.evidence-item .src{font-weight:700;font-family:'IBM Plex Mono';font-size:10.5px;color:var(--cyan);}
+.explain-box{background:rgba(76,141,255,.06);border:1px solid rgba(76,141,255,.25);border-radius:9px;padding:13px 14px;font-size:12.6px;line-height:1.75;color:var(--ink-soft);}
+.explain-box b{color:var(--cyan);}
+
+/* ================= HARMONIZATION PIPELINE ================= */
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);}
+.step:last-child{border-bottom:none;}
+.step .idx{width:28px;height:28px;border-radius:50%;background:var(--gray-soft);color:var(--ink-mute);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono';font-size:12px;font-weight:600;flex-shrink:0;transition:all .25s;}
+.step.done .idx{background:var(--emerald);color:#fff;}
+.step.active .idx{background:var(--blue);color:#fff;box-shadow:0 0 0 6px var(--blue-soft);}
+.step .body h4{font-size:13.5px;margin-bottom:3px;font-weight:600;}
+.step .body p{font-size:11.8px;color:var(--ink-soft);}
+.step .result{margin-top:9px;display:none;}
+.step.done .result{display:block;}
+
+.match-bars{display:flex;flex-direction:column;gap:9px;margin-top:4px;}
+.match-row{display:flex;align-items:center;gap:10px;font-size:11.8px;}
+.match-row .lbl{width:150px;color:var(--ink-soft);flex-shrink:0;}
+.match-row .bar{flex:1;height:6px;background:rgba(49,46,98,.10);border-radius:4px;overflow:hidden;}
+.match-row .bar .f{height:100%;background:var(--cyan);border-radius:4px;transition:width 1s ease;}
+.match-row .val{width:40px;text-align:right;font-family:'IBM Plex Mono';font-weight:600;}
+
+.dropzone{border:1.5px dashed var(--line-strong);border-radius:12px;padding:26px 16px;text-align:center;cursor:pointer;transition:all .15s;background:rgba(49,46,98,.02);}
+.dropzone:hover{border-color:var(--blue);background:var(--blue-soft);}
+.dropzone.filled{border-style:solid;border-color:var(--emerald);background:var(--emerald-soft);}
+.dropzone .dz-ic{font-size:20px;color:var(--ink-mute);margin-bottom:6px;}
+.dropzone .dz-title{font-size:12.8px;font-weight:600;color:var(--ink);}
+.dropzone .dz-sub{font-size:10.8px;color:var(--ink-mute);margin-top:4px;font-family:'IBM Plex Mono';}
+.upload-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;}
+.upload-row:last-child{border-bottom:none;}
+
+/* ================= LIVE MAP (real geodata) ================= */
+#liveMapStage{position:relative;height:480px;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--panel-solid);}
+#liveMapStage .maplibregl-map{width:100%;height:100%;}
+#indiaMapStage{position:relative;width:100%;height:560px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#dfe6f2;}
+#indiaMapStage .maplibregl-map{width:100%;height:100%;}
+#indiaMapHint{position:absolute;top:12px;left:12px;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-family:'IBM Plex Mono';font-size:11px;color:var(--ink-soft);display:flex;align-items:center;gap:7px;box-shadow:0 6px 18px rgba(49,46,98,.12);}
+#indiaMapLoc{position:absolute;bottom:12px;left:12px;z-index:5;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:10px;padding:8px 13px;font-family:'IBM Plex Mono';font-size:11px;color:var(--ink);max-width:calc(100% - 24px);box-shadow:0 6px 18px rgba(49,46,98,.12);display:none;}
+#indiaMapLoc.show{display:block;}
+#indiaMapLoading{position:absolute;inset:0;z-index:6;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:linear-gradient(135deg,#eef2ff,#e6ecff);font-family:'IBM Plex Mono';font-size:12px;color:var(--ink-soft);}
+#indiaMapLoading.hide{display:none;}
+#indiaMapLoading .spin{width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+#liveMapStage .live-status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:30px;font-size:12.5px;color:var(--ink-mute);background:var(--panel-solid);z-index:2;gap:10px;flex-direction:column;}
+#liveMapStage .live-status .spin{width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;}
+.live-toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+.live-badge{font-family:'IBM Plex Mono';font-size:10.5px;font-weight:600;padding:5px 10px;border-radius:20px;background:var(--emerald-soft);color:var(--emerald);border:1px solid rgba(13,169,110,.3);display:inline-flex;align-items:center;gap:6px;}
+.parcel-pin{width:16px;height:16px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(35,31,61,.35);cursor:pointer;}
+.parcel-pin.selected{width:22px;height:22px;box-shadow:0 0 0 5px rgba(91,33,182,.25),0 2px 6px rgba(35,31,61,.4);}
+.maplibregl-popup-content{background:var(--panel-solid) !important;color:var(--ink) !important;border-radius:10px !important;font-family:'Manrope',sans-serif !important;padding:12px 14px !important;box-shadow:0 12px 30px rgba(49,46,98,.2) !important;}
+.maplibregl-popup-tip{border-top-color:var(--panel-solid) !important;}
+.live-popup b{font-family:'Sora';font-size:13px;}
+.live-popup .lp-row{display:flex;justify-content:space-between;gap:14px;font-size:11.5px;color:var(--ink-soft);margin-top:5px;}
+.live-popup button{margin-top:9px;width:100%;}
+
+/* ================= 3D TWIN ================= */
+.twin-toggle{display:flex;gap:6px;margin-bottom:14px;}
+.twin-btn{font-size:12px;padding:8px 16px;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--ink-soft);}
+.twin-btn.active{background:var(--grad1);color:#fff;border-color:transparent;}
+
+/* ================= LOGIN ================= */
+#loginScreen{position:fixed;inset:0;z-index:1000;display:grid;grid-template-columns:1.2fr 440px;background:var(--void);overflow-y:auto;}
+@media(max-width:980px){#loginScreen{grid-template-columns:1fr;height:auto;} .brandpane{display:none;}}
+.brandpane{position:relative;padding:44px 50px 34px;display:flex;flex-direction:column;overflow-y:auto;overflow-x:hidden;background:
+    radial-gradient(circle at 12% 10%,rgba(91,33,182,.14),transparent 42%),
+    radial-gradient(circle at 88% 20%,rgba(124,58,237,.13),transparent 40%),
+    radial-gradient(circle at 80% 90%,rgba(109,40,217,.14),transparent 46%),
+    radial-gradient(circle at 8% 85%,rgba(234,154,10,.10),transparent 40%);}
+.login-brand{display:flex;align-items:center;gap:11px;margin-bottom:34px;position:relative;z-index:2;}
+.login-brand .mk{width:34px;height:34px;border-radius:9px;background:var(--grad1);position:relative;flex-shrink:0;box-shadow:0 0 22px rgba(91,33,182,.45);}
+.login-brand .mk::after{content:'';position:absolute;inset:8px;background:#fff;border-radius:2px;}
+.login-brand .name{font-family:'Sora';font-size:20px;font-weight:700;line-height:1.1;color:var(--ink);}
+.login-brand .name .fab{background:linear-gradient(90deg,var(--cyan),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.login-brand .tag{display:block;font-size:9.5px;letter-spacing:.1em;color:var(--ink-mute);font-family:'IBM Plex Mono';margin-top:3px;}
+
+.hero-heading{position:relative;z-index:2;}
+.hero-heading h1{font-family:'Sora';font-size:38px;font-weight:700;line-height:1.24;color:var(--ink);letter-spacing:-.01em;}
+.hero-heading h1 .accent{background:linear-gradient(90deg,var(--cyan),var(--blue));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hero-rule{width:48px;height:3px;background:var(--grad1);border-radius:2px;margin:16px 0;}
+.hero-sub{font-size:13.5px;color:var(--ink-soft);max-width:480px;line-height:1.7;}
+
+.hero-scene{position:relative;border-radius:16px;overflow:hidden;margin-top:26px;height:280px;border:1px solid var(--line);background:radial-gradient(circle at 30% 20%,rgba(91,33,182,.14),transparent 55%),radial-gradient(circle at 80% 80%,rgba(109,40,217,.12),transparent 50%),#ffffff;z-index:2;box-shadow:0 22px 50px rgba(91,33,182,.16),0 4px 14px rgba(49,46,98,.08);}
+.hero-scene svg{position:absolute;inset:0;width:100%;height:100%;}
+.hero-scene .conn-line{stroke-dasharray:5 5;animation:dashmove 22s linear infinite;}
+@keyframes dashmove{to{stroke-dashoffset:-200;}}
+.hero-scene .pulse-ring{animation:pulseRing 2.6s ease-out infinite;transform-origin:center;transform-box:fill-box;}
+@keyframes pulseRing{0%{r:5;opacity:.6;}100%{r:24;opacity:0;}}
+.hero-scene .parcel-block{filter:drop-shadow(0 6px 10px rgba(49,46,98,.12));}
+.hero-scene .scan-sweep{position:absolute;top:0;bottom:0;left:-16%;width:16%;background:linear-gradient(90deg,transparent,rgba(76,141,255,.22),rgba(139,92,246,.12),transparent);animation:scanSweep 7.5s ease-in-out infinite;pointer-events:none;mix-blend-mode:multiply;}
+@keyframes scanSweep{0%,100%{left:-16%;}50%{left:100%;}}
+.hero-scene .satellite-badge{position:absolute;top:9%;right:5%;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.92);border:1px solid var(--line-strong);backdrop-filter:blur(6px);padding:5px 11px;border-radius:20px;font-size:10.3px;font-weight:700;color:#4c8dff;box-shadow:0 4px 10px rgba(49,46,98,.1);}
+.hero-scene .satellite-badge .dot{width:6px;height:6px;border-radius:50%;background:#4c8dff;animation:pulseDot 1.6s ease-in-out infinite;}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.4);}}
+.hero-scene .satellite-icon{filter:drop-shadow(0 3px 6px rgba(76,141,255,.5));}
+.map-chip{position:absolute;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.92);border:1px solid var(--line-strong);backdrop-filter:blur(6px);padding:6px 12px;border-radius:20px;font-size:10.8px;font-weight:700;white-space:nowrap;box-shadow:0 4px 10px rgba(49,46,98,.1);}
+.map-chip .ic{width:12px;height:12px;flex-shrink:0;}
+.map-chip.blue{color:var(--blue);} .map-chip.amber{color:var(--amber);} .map-chip.red{color:var(--red);} .map-chip.green{color:var(--emerald);} .map-chip.purple{color:var(--purple);}
+
+.featuregrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:28px;position:relative;z-index:2;}
+.featurecard .ic-wrap{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;}
+.featurecard .ic-wrap svg{width:17px;height:17px;}
+.featurecard h4{font-size:12.5px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.featurecard p{font-size:11px;color:var(--ink-mute);line-height:1.55;}
+@media(max-width:1180px){.featuregrid{grid-template-columns:repeat(2,1fr);}}
+
+.statsrow{display:flex;align-items:stretch;margin-top:auto;padding-top:30px;position:relative;z-index:2;}
+.statitem{display:flex;align-items:center;gap:12px;flex:1;}
+.statitem .ic-wrap{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.statitem .ic-wrap svg{width:16px;height:16px;}
+.statitem .num{font-family:'Sora';font-size:19px;font-weight:700;color:var(--ink);}
+.statitem .lab{font-size:10.5px;color:var(--ink-mute);line-height:1.35;margin-top:1px;}
+.statdiv{width:1px;background:var(--line);margin:0 20px;}
+
+.authpane{display:flex;align-items:center;justify-content:center;padding:40px 32px;overflow-y:auto;background:var(--bg1);border-left:1px solid var(--line);}
+.authcard{width:100%;max-width:380px;background:var(--panel-solid);border:1px solid var(--line);border-radius:18px;padding:36px 32px;box-shadow:0 20px 50px rgba(49,46,98,.14);}
+.authcard .top-mk{display:none;}
+@media(max-width:980px){
+  .authcard .top-mk{display:flex;align-items:center;gap:9px;margin-bottom:24px;justify-content:center;}
+  .authcard .top-mk .mk{width:22px;height:22px;border-radius:6px;background:var(--grad1);}
+  .authcard .top-mk b{font-size:15px;font-weight:700;font-family:'Sora';color:var(--ink);}
+}
+.lockcircle{width:56px;height:56px;border-radius:50%;background:var(--emerald-soft);border:1px solid rgba(13,169,110,.35);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
+.lockcircle svg{width:23px;height:23px;color:var(--emerald);}
+.authcard h2{font-family:'Sora';font-size:21px;font-weight:700;text-align:center;color:var(--ink);}
+.authcard .sub{font-size:12.3px;color:var(--ink-soft);margin-top:6px;margin-bottom:26px;text-align:center;}
+.field{margin-bottom:16px;}
+.field label{display:block;font-size:11.8px;font-weight:600;color:var(--ink-soft);margin-bottom:7px;}
+.field .inputwrap{position:relative;}
+.field input,.field select{width:100%;font-family:inherit;font-size:13.5px;padding:11px 12px;border:1px solid var(--line);border-radius:9px;background:#fbfaff;color:var(--ink);transition:border-color .15s,box-shadow .15s;}
+.field .inputwrap.icon input,.field .inputwrap.icon select{padding-left:38px;}
+.field .inputwrap .fic{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-mute);pointer-events:none;}
+.field input:focus,.field select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-soft);}
+.field select option{background:var(--panel-solid);}
+.field .toggle-vis{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;align-items:center;color:var(--ink-mute);background:none;border:none;padding:2px 4px;}
+.field .toggle-vis:hover{color:var(--blue);}
+.field .toggle-vis .eye-off{display:none;}
+.field .err{font-size:11.3px;color:var(--red);margin-top:5px;display:none;}
+.field.invalid input{border-color:var(--red);}
+.field.invalid .err{display:block;}
+.rowflex{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.remember{display:flex;align-items:center;gap:7px;font-size:12.2px;color:var(--ink-soft);}
+.remember input{width:14px;height:14px;accent-color:var(--blue);}
+.linklike{font-size:12.2px;color:var(--cyan);font-weight:600;background:none;border:none;cursor:pointer;}
+.linklike:hover{text-decoration:underline;}
+#loginScreen .btn{font-size:13.5px;font-weight:700;padding:13px 14px;border-radius:10px;border:1px solid var(--line);background:#fbfaff;color:var(--ink);transition:all .15s;width:100%;}
+#loginScreen .btn.primary{background:var(--grad1);border-color:transparent;color:#fff;}
+#loginScreen .btn.primary:hover{filter:brightness(1.1);}
+#loginScreen .btn.primary:disabled{opacity:.6;cursor:not-allowed;}
+#loginScreen .btn.primary .spin{display:none;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;margin-right:7px;vertical-align:-2px;animation:spin .7s linear infinite;}
+#loginScreen .btn.primary.loading .spin{display:inline-block;}
+.btn.dashboard{display:flex;align-items:center;justify-content:center;gap:8px;}
+.btn.dashboard svg{width:15px;height:15px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.footnote{font-size:11.3px;color:var(--ink-mute);text-align:center;margin-top:22px;line-height:1.6;}
+.footnote a{color:var(--cyan);font-weight:600;cursor:pointer;}
+.alert{align-items:flex-start;gap:8px;font-size:12px;background:var(--red-soft);color:var(--red);border-radius:9px;padding:9px 11px;margin-bottom:16px;display:none;border:1px solid rgba(244,82,90,.3);}
+.alert.show{display:flex;}
+.alert.success{background:var(--emerald-soft);color:var(--emerald);border-color:rgba(39,201,106,.3);}
+
+/* ================= BOOT SEQUENCE ================= */
+#bootOverlay{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#f5f3ff,#eef2ff);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;transition:opacity .5s ease;}
+#bootOverlay.hide{opacity:0;pointer-events:none;}
+.boot-mk{width:52px;height:52px;border-radius:14px;background:var(--grad1);box-shadow:0 0 40px rgba(91,33,182,.4);animation:bootSpin 2.2s ease-in-out infinite;}
+@keyframes bootSpin{0%,100%{transform:scale(1) rotate(0deg);}50%{transform:scale(1.08) rotate(90deg);}}
+.boot-lines{font-family:'IBM Plex Mono';font-size:12px;color:var(--ink-soft);min-height:20px;text-align:center;}
+.boot-bar{width:220px;height:3px;background:rgba(49,46,98,.12);border-radius:2px;overflow:hidden;}
+.boot-bar .f{height:100%;width:0%;background:var(--grad1);transition:width .4s ease;}
+</style>
+</head>
+<body>
+
+<!-- ============ BOOT SEQUENCE ============ -->
+<div id="bootOverlay" style="display:none;">
+  <div class="boot-mk"></div>
+  <div class="boot-lines mono" id="bootText">Authenticating workspace…</div>
+  <div class="boot-bar"><div class="f" id="bootFill"></div></div>
+</div>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div id="loginScreen">
+  <div class="brandpane">
+    <div class="login-brand">
+      <div class="mk"></div>
+      <div><span class="name">Urban<span class="fab">Fabric</span></span><span class="tag">LAND RECORD INTELLIGENCE</span></div>
+    </div>
+
+    <div class="hero-heading">
+      <h1>Smart Land Records.<br>One <span class="accent">Trusted Platform.</span></h1>
+      <div class="hero-rule"></div>
+      <div class="hero-sub">Integrating registration, municipal, survey and satellite data to deliver trusted, transparent and traceable land intelligence for government agencies.</div>
+    </div>
+
+    <div class="hero-scene">
+      <svg viewBox="0 0 1000 460" preserveAspectRatio="none">
+        <defs>
+          <pattern id="gridp" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="rgba(49,46,98,0.06)"/></pattern>
+          <linearGradient id="gGreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2fe0a3"/><stop offset="100%" stop-color="#0da96e"/></linearGradient>
+          <linearGradient id="gAmber" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#ea9a0a"/></linearGradient>
+          <linearGradient id="gRed" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#f87171"/><stop offset="100%" stop-color="#ef4444"/></linearGradient>
+          <linearGradient id="gViolet" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#7c3aed"/></linearGradient>
+          <linearGradient id="gDeep" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#8b5cf6"/><stop offset="100%" stop-color="#5b21b6"/></linearGradient>
+          <radialGradient id="vignette" cx="28%" cy="12%" r="80%"><stop offset="0%" stop-color="#5b21b6" stop-opacity=".12"/><stop offset="100%" stop-color="#5b21b6" stop-opacity="0"/></radialGradient>
+          <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#312e62" flood-opacity=".18"/></filter>
+        </defs>
+        <rect width="1000" height="460" fill="url(#gridp)"/>
+        <rect width="1000" height="460" fill="url(#vignette)"/>
+
+        <!-- data-harmonization links between sources -->
+        <g opacity=".5">
+          <line class="conn-line" x1="60" y1="118" x2="218" y2="192" stroke="#0da96e" stroke-width="1.5"/>
+          <line class="conn-line" x1="340" y1="54" x2="452" y2="142" stroke="#ea9a0a" stroke-width="1.5"/>
+          <line class="conn-line" x1="530" y1="220" x2="402" y2="284" stroke="#ef4444" stroke-width="1.5"/>
+          <line class="conn-line" x1="710" y1="82" x2="715" y2="112" stroke="#6d28d9" stroke-width="1.5"/>
+          <line class="conn-line" x1="218" y1="192" x2="452" y2="142" stroke="#4c8dff" stroke-width="1.2" opacity=".6"/>
+          <line class="conn-line" x1="452" y1="142" x2="715" y2="112" stroke="#4c8dff" stroke-width="1.2" opacity=".6"/>
+          <line class="conn-line" x1="402" y1="284" x2="218" y2="192" stroke="#4c8dff" stroke-width="1.2" opacity=".6"/>
+        </g>
+
+        <!-- parcels: gradient fill + soft elevation -->
+        <g filter="url(#softShadow)">
+          <polygon class="parcel-block" points="40,140 310,60 420,180 260,300 60,280" fill="url(#gGreen)" fill-opacity="0.3" stroke="#0da96e" stroke-width="2" stroke-linejoin="round"/>
+          <polygon class="parcel-block" points="310,60 560,90 520,240 420,180" fill="url(#gAmber)" fill-opacity="0.3" stroke="#ea9a0a" stroke-width="2" stroke-linejoin="round"/>
+          <polygon class="parcel-block" points="420,180 520,240 470,380 340,340 260,300" fill="url(#gRed)" fill-opacity="0.3" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"/>
+          <polygon class="parcel-block" points="520,240 700,220 660,380 470,380" fill="url(#gViolet)" fill-opacity="0.22" stroke="#8b5cf6" stroke-width="1.5" stroke-linejoin="round"/>
+          <polygon class="parcel-block" points="600,60 780,40 820,160 660,180" fill="url(#gDeep)" fill-opacity="0.3" stroke="#6d28d9" stroke-width="2" stroke-linejoin="round"/>
+        </g>
+
+        <!-- building texture -->
+        <g opacity=".9">
+          <rect x="110" y="190" width="20" height="26" rx="2" fill="#fff" stroke="#0da96e" stroke-width="1"/>
+          <rect x="140" y="200" width="16" height="16" rx="2" fill="#fff" stroke="#0da96e" stroke-width="1"/>
+          <rect x="300" y="148" width="18" height="20" rx="2" fill="#fff" stroke="#ea9a0a" stroke-width="1"/>
+          <rect x="650" y="80" width="18" height="24" rx="2" fill="#fff" stroke="#6d28d9" stroke-width="1"/>
+          <rect x="678" y="95" width="14" height="14" rx="2" fill="#fff" stroke="#6d28d9" stroke-width="1"/>
+          <rect x="560" y="288" width="16" height="18" rx="2" fill="#fff" stroke="#ef4444" stroke-width="1"/>
+        </g>
+
+        <!-- centroid markers with pulse -->
+        <circle cx="218" cy="192" r="4" fill="#0da96e"/>
+        <circle class="pulse-ring" cx="218" cy="192" r="5" fill="none" stroke="#0da96e" stroke-width="1.5"/>
+        <circle cx="452" cy="142" r="4" fill="#ea9a0a"/>
+        <circle class="pulse-ring" cx="452" cy="142" r="5" fill="none" stroke="#ea9a0a" stroke-width="1.5"/>
+        <circle cx="402" cy="284" r="4" fill="#ef4444"/>
+        <circle class="pulse-ring" cx="402" cy="284" r="5" fill="none" stroke="#ef4444" stroke-width="1.5"/>
+        <circle cx="715" cy="112" r="4" fill="#6d28d9"/>
+        <circle class="pulse-ring" cx="715" cy="112" r="5" fill="none" stroke="#6d28d9" stroke-width="1.5"/>
+
+        <!-- orbit trail + satellite -->
+        <path id="orbitPath" d="M -40,80 C 220,-30 620,-20 1040,100" fill="none" stroke="#4c8dff" stroke-width="1" stroke-dasharray="2 7" opacity=".4"/>
+        <g class="satellite-icon">
+          <g transform="translate(-13,-9)">
+            <line x1="4.5" y1="6" x2="4.5" y2="0.5" stroke="#4c8dff" stroke-width="1.2"/>
+            <circle cx="4.5" cy="0" r="1.4" fill="#4c8dff"/>
+            <rect x="-8" y="6.5" width="7" height="6.5" fill="#4c8dff" opacity=".8"/>
+            <rect x="0" y="5.5" width="9" height="9" rx="1.5" fill="#f5f7ff" stroke="#4c8dff" stroke-width="1.2"/>
+            <rect x="10" y="6.5" width="7" height="6.5" fill="#4c8dff" opacity=".8"/>
+          </g>
+          <animateMotion dur="13s" repeatCount="indefinite" rotate="auto">
+            <mpath href="#orbitPath"/>
+          </animateMotion>
+        </g>
+      </svg>
+
+      <div class="scan-sweep"></div>
+
+      <div class="satellite-badge"><span class="dot"></span>Live satellite sync</div>
+
+      <div class="map-chip green" style="top:24%; left:5%;">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+        Verified
+      </div>
+      <div class="map-chip amber" style="top:10%; left:33%;">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+        Under Review
+      </div>
+      <div class="map-chip red" style="top:46%; left:52%;">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v5M12 16h.01"/></svg>
+        Conflict Detected
+      </div>
+      <div class="map-chip purple" style="top:16%; left:70%;">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7l4 4L7 21l-4-4z"/></svg>
+        AI Change
+      </div>
+    </div>
+
+    <div class="featuregrid">
+      <div class="featurecard">
+        <div class="ic-wrap" style="background:var(--blue-soft); color:var(--blue);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg></div>
+        <h4>Land Records</h4>
+        <p>Cross-verified property records from every connected source.</p>
+      </div>
+      <div class="featurecard">
+        <div class="ic-wrap" style="background:var(--emerald-soft); color:var(--emerald);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h4>AI Verification</h4>
+        <p>Detects duplicates, conflicts and ownership anomalies automatically.</p>
+      </div>
+      <div class="featurecard">
+        <div class="ic-wrap" style="background:var(--purple-soft); color:var(--purple);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 7l4 4L7 21l-4-4z"/><path d="M14.5 5.5l4 4M17 3l4 4-2 2-4-4z"/><path d="M3 21l3-1"/></svg></div>
+        <h4>Satellite Insights</h4>
+        <p>Continuous change detection across the entire city footprint.</p>
+      </div>
+      <div class="featurecard">
+        <div class="ic-wrap" style="background:var(--amber-soft); color:var(--amber);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h4>Role Based Access</h4>
+        <p>Scoped, auditable access for every department and role.</p>
+      </div>
+    </div>
+
+    <div class="statsrow">
+      <div class="statitem">
+        <div class="ic-wrap" style="background:var(--blue-soft); color:var(--blue);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg></div>
+        <div><div class="num">9</div><div class="lab">Data Sources<br>Integrated</div></div>
+      </div>
+      <div class="statdiv"></div>
+      <div class="statitem">
+        <div class="ic-wrap" style="background:var(--emerald-soft); color:var(--emerald);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div><div class="num">94%</div><div class="lab">Record Accuracy<br>Achieved</div></div>
+      </div>
+      <div class="statdiv"></div>
+      <div class="statitem">
+        <div class="ic-wrap" style="background:var(--purple-soft); color:var(--purple);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+        <div><div class="num">24/7</div><div class="lab">Land Monitoring<br>&amp; Surveillance</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="authpane">
+    <div class="authcard">
+      <div class="top-mk"><div class="mk"></div><b>UrbanFabric</b></div>
+
+      <div id="paneSignin">
+        <div class="lockcircle">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </div>
+        <h2>Welcome Back</h2>
+        <div class="sub">Sign in to access your UrbanFabric workspace</div>
+        <div class="alert" id="signinAlert"></div>
+
+        <form id="signinForm" novalidate onsubmit="return handleSignin(event)">
+          <div class="field" id="fEmail">
+            <label for="loginEmail">Work Email</label>
+            <div class="inputwrap icon">
+              <svg class="fic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 7l10 6 10-6"/></svg>
+              <input type="email" id="loginEmail" placeholder="name@municipality.gov.in" autocomplete="username">
+            </div>
+            <div class="err">Enter a valid work email address.</div>
+          </div>
+
+          <div class="field" id="fPass">
+            <label for="loginPassword">Password</label>
+            <div class="inputwrap icon">
+              <svg class="fic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+              <input type="password" id="loginPassword" placeholder="••••••••••" autocomplete="current-password" style="padding-right:38px;">
+              <button type="button" class="toggle-vis" onclick="togglePass()">
+                <svg class="eye-on" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.8 21.8 0 0 1 5.06-5.94M9.9 4.24A10.94 10.94 0 0 1 12 5c7 0 11 7 11 7a21.8 21.8 0 0 1-3.22 4.36M14.12 14.12a3 3 0 1 1-4.24-4.24"/><path d="M1 1l22 22"/></svg>
+              </button>
+            </div>
+            <div class="err">Password must be at least 8 characters.</div>
+          </div>
+
+          <div class="field">
+            <label for="loginRole">Sign in as</label>
+            <div class="inputwrap icon">
+              <svg class="fic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <select id="loginRole">
+                <option value="admin">Admin</option>
+                <option value="gis_officer">Survey / GIS Officer</option>
+                <option value="revenue_officer">Revenue Officer</option>
+                <option value="municipal_officer">Municipal Officer</option>
+                <option value="utility_officer">Utility Officer</option>
+                <option value="ground_officer">Ground Survey Officer</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="rowflex">
+            <label class="remember"><input type="checkbox" id="remember"> Keep me signed in</label>
+            <button type="button" class="linklike" onclick="setLoginMode('reset')">Forgot password?</button>
+          </div>
+
+          <button type="submit" class="btn primary dashboard" id="signinBtn">
+            <span class="spin"></span><span class="label">Access Command Center</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+
+        <div class="footnote">Don't have workspace access? <a onclick="setLoginMode('request')">Request Access</a></div>
+      </div>
+
+      <div id="paneRequest" style="display:none;">
+        <h2>Request access</h2>
+        <div class="sub">For registrar, planning and audit staff of onboarded municipalities.</div>
+        <div class="alert success" id="requestAlert"></div>
+        <form id="requestForm" onsubmit="return handleRequest(event)">
+          <div class="field"><label for="rname">Full name</label><input type="text" id="rname" placeholder="Jane Doe"></div>
+          <div class="field"><label for="remail">Work email</label><input type="email" id="remail" placeholder="name@municipality.gov.in"></div>
+          <div class="field"><label for="rdept">Department / municipality</label><input type="text" id="rdept" placeholder="e.g. Ward 14 Revenue Office"></div>
+          <button type="submit" class="btn primary"><span class="label">Submit request</span></button>
+        </form>
+        <div class="footnote">Already onboarded? <a onclick="setLoginMode('signin')">Sign in instead</a>.</div>
+      </div>
+
+      <div id="paneReset" style="display:none;">
+        <h2>Reset password</h2>
+        <div class="sub">We'll send a reset link to your work email.</div>
+        <div class="alert success" id="resetAlert"></div>
+        <form id="resetForm" onsubmit="return handleReset(event)">
+          <div class="field"><label for="rsemail">Work email</label><input type="email" id="rsemail" placeholder="name@municipality.gov.in"></div>
+          <button type="submit" class="btn primary"><span class="label">Send reset link</span></button>
+        </form>
+        <div class="footnote"><a onclick="setLoginMode('signin')">Back to sign in</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP (hidden until signed in) ============ -->
+<div id="appRoot">
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mk"></div>
+      <div><b>UrbanFabric</b><span>Land Record Intelligence</span></div>
+    </div>
+
+    <div class="navgroup">Overview</div>
+    <div class="navitem active" data-page="dashboard"><span class="ic">▣</span>Command center</div>
+
+    <div class="navgroup">Data intake</div>
+    <div class="navitem" data-page="upload"><span class="ic">⇧</span>Data upload</div>
+
+    <div class="navgroup">Core workflow</div>
+    <div class="navitem" data-page="explorer"><span class="ic">◈</span>Parcel explorer</div>
+    <div class="navitem" data-page="harmonization"><span class="ic">⇄</span>Harmonization pipeline</div>
+    <div class="navitem" data-page="conflicts"><span class="ic">▲</span>Conflict center<span class="badge red" id="navConflictBadge">—</span></div>
+    <div class="navitem" data-page="anomalies"><span class="ic">✦</span>Anomaly center<span class="badge purple" id="navAnomalyBadge">—</span></div>
+    <div class="navitem" data-page="review"><span class="ic">☐</span>Review queue<span class="badge amber" id="navReviewBadge">—</span></div>
+
+    <div class="navgroup">Records</div>
+    <div class="navitem" data-page="master"><span class="ic">▤</span>Master record</div>
+    <div class="navitem" data-page="audit"><span class="ic">≡</span>Audit trail</div>
+
+    <div class="navgroup">Platform</div>
+    <div class="navitem" data-page="sources"><span class="ic">⛁</span>Data sources</div>
+    <div class="navitem" data-page="twin"><span class="ic">◭</span>Digital twin</div>
+    <div class="navitem" data-page="governance"><span class="ic">◎</span>Governance</div>
+
+    <div class="sidebar-foot" id="backendBadge"><span class="dot live" style="background:var(--ink-mute);color:var(--ink-mute);"></span>Checking backend…</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Command center</h1>
+        <div class="sub" id="pageSub" style="display:none;"></div>
+      </div>
+      <div class="topbar-right">
+        <button class="iconbtn" title="Jump to parcel search" onclick="jumpToSearch()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg></button>
+        <div class="clockchip mono" id="clockChip">--:--:--</div>
+        <div class="role-pill"><span class="dot live" style="background:var(--emerald);color:var(--emerald);"></span><span id="rolePillText">Signed in</span></div>
+        <button class="iconbtn" title="Sign out" onclick="signOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></button>
+      </div>
+    </div>
+
+    <!-- ================= DASHBOARD ================= -->
+    <div class="page active" id="page-dashboard">
+      <div class="grid g4" style="margin-bottom:14px;">
+        <div class="card kpi-card" style="--accent:var(--blue);"><div class="num mono" id="kpiTotal">—</div><div class="label">Total parcels tracked</div><div class="trend" id="kpiTotalTrend">—</div></div>
+        <div class="card kpi-card" style="--accent:var(--emerald);"><div class="num mono" id="kpiHarmonized" style="color:var(--emerald)">—</div><div class="label">Harmonized (verified)</div><div class="trend" id="kpiHarmonizedTrend">—</div></div>
+        <div class="card kpi-card" style="--accent:var(--amber);"><div class="num mono" id="kpiReview" style="color:var(--amber)">—</div><div class="label">Review required</div><div class="trend">Awaiting officer decision</div></div>
+        <div class="card kpi-card" style="--accent:var(--red);"><div class="num mono" id="kpiConflicts" style="color:var(--red)">—</div><div class="label">Active conflicts</div><div class="trend">Cross-source disagreement</div></div>
+      </div>
+      <div class="grid g4" style="margin-bottom:14px;">
+        <div class="card kpi-card" style="--accent:var(--purple);"><div class="num mono" id="kpiChanges" style="color:var(--purple)">—</div><div class="label">AI-detected changes</div><div class="trend">Satellite-derived</div></div>
+        <div class="card kpi-card" style="--accent:var(--amber);"><div class="num mono" id="kpiAnomalies" style="color:var(--amber)">—</div><div class="label">Anomalies flagged</div><div class="trend">Construction without permit</div></div>
+        <div class="card kpi-card" style="--accent:var(--cyan);"><div class="num mono" id="kpiSources" style="color:var(--cyan)">—</div><div class="label">Connected data sources</div><div class="trend" id="kpiSourcesTrend">—</div></div>
+        <div class="card kpi-card" style="--accent:var(--blue);"><div class="num mono" id="kpiWards">4</div><div class="label">Zones under monitoring</div><div class="trend" id="kpiWardsTrend">Village-wide coverage</div></div>
+      </div>
+
+      <div class="grid g3" style="margin-bottom:14px;">
+        <div class="card gauge-card">
+          <svg id="gaugeHealth" width="140" height="140" viewBox="0 0 140 140"></svg>
+          <div class="glabel">City Health Score</div>
+          <div class="gsub">Composite data reliability</div>
+        </div>
+        <div class="card gauge-card">
+          <svg id="gaugeTrust" width="140" height="140" viewBox="0 0 140 140"></svg>
+          <div class="glabel">Land Trust Index</div>
+          <div class="gsub">Average match confidence</div>
+        </div>
+        <div class="card gauge-card">
+          <svg id="gaugeRisk" width="140" height="140" viewBox="0 0 140 140"></svg>
+          <div class="glabel">Conflict Prediction</div>
+          <div class="gsub">Village zone risk radar</div>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="section-title">Harmonization status<span class="hint" id="donutHint">30 parcels</span></div>
+          <svg viewBox="0 0 200 200" width="180" height="180" style="display:block; margin:0 auto;" id="donutChart"></svg>
+          <div class="chart-legend" id="donutLegend" style="display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:11px;"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Building change over time<span class="hint">village avg, sq.m</span></div>
+          <svg viewBox="0 0 320 160" width="100%" height="160" id="timelineChart"></svg>
+        </div>
+      </div>
+
+      <div class="grid g2" style="margin-bottom:14px;">
+        <div class="card">
+          <div class="section-title">Ward-level risk heatmap<span class="hint">conflicts + anomalies</span></div>
+          <div class="grid g2" id="wardRisk" style="gap:10px;"></div>
+        </div>
+        <div class="card">
+          <div class="section-title">Live intelligence feed<span class="hint"><span class="dot live" style="background:var(--cyan);color:var(--cyan);"></span> streaming</span></div>
+          <div id="liveFeed" style="max-height:220px; overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">AI insights &amp; recommendations<span class="hint">generated from current dataset</span></div>
+        <div id="aiInsights"></div>
+      </div>
+    </div>
+
+    <!-- ================= DATA UPLOAD ================= -->
+    <div class="page" id="page-upload">
+      <div class="legal-note" id="uploadRoleNote" style="margin-bottom:14px; margin-top:0;"></div>
+      <div class="grid g2">
+        <div class="card">
+          <div class="section-title">Upload a dataset<span class="hint">role-scoped</span></div>
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:6px;">Dataset type</label>
+            <select id="uploadDatasetType" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:9px; font-size:12.8px; background:#fbfaff; color:var(--ink);"></select>
+          </div>
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:6px;">Accepted formats for this dataset</label>
+            <div class="filter-row" id="uploadFormatChips" style="margin-top:0;"></div>
+          </div>
+          <div class="dropzone" id="uploadDropzone" onclick="document.getElementById('uploadFileInput').click()">
+            <input type="file" id="uploadFileInput" style="display:none;" onchange="onUploadFileChosen(this)">
+            <div class="dz-ic">⇧</div>
+            <div class="dz-title" id="dzTitle">Click to choose a file, or drag one here</div>
+            <div class="dz-sub" id="dzSub">GeoTIFF · TIFF · GeoJSON · Shapefile (.zip) · KML · CSV · XLSX · JSON</div>
+          </div>
+          <button class="btn primary" id="runUploadBtn" style="margin-top:14px;" onclick="simulateUpload()" disabled>Upload &amp; run intake pipeline</button>
+          <div class="btnrow" style="margin-top:10px;">
+            <button class="btn" type="button" onclick="downloadSampleFile('csv')">⇩ Download CSV template (full schema)</button>
+            <button class="btn" type="button" onclick="downloadSampleFile('minimal')">⇩ Download CSV template (minimal columns)</button>
+          </div>
+          <hr class="div">
+          <div class="steps" id="uploadSteps"></div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="section-title">Recent uploads<span class="hint">this session</span></div>
+            <div id="recentUploads"><div class="empty-hint">No uploads yet this session.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= PARCEL EXPLORER ================= -->
+    <div class="page" id="page-explorer">
+      <div class="gis-workspace">
+        <div class="gis-left">
+          <div class="card">
+            <input id="parcelSearch" placeholder="Search Master ID, survey no, owner, ward…" style="width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; font-size:12.8px; background:#fbfaff; color:var(--ink);">
+            <div class="filter-row" id="statusFilterRow">
+              <span class="filter-chip active" data-status="all">All</span>
+              <span class="filter-chip" data-status="verified">Verified</span>
+              <span class="filter-chip" data-status="review">Review</span>
+              <span class="filter-chip" data-status="conflict">Conflict</span>
+              <span class="filter-chip" data-status="ai-change">AI Change</span>
+            </div>
+            <div class="parcel-list" id="parcelList"></div>
+          </div>
+        </div>
+
+        <div class="gis-center">
+          <div class="map-panel">
+            <div class="map-toolbar">
+              <div>
+                <span class="layer-chip active" data-layer="cadastral">Cadastral</span>
+                <span class="layer-chip active" data-layer="buildings">Buildings</span>
+                <span class="layer-chip active" data-layer="conflict">Conflicts</span>
+                <span class="layer-chip active" data-layer="anomaly">Anomalies</span>
+              </div>
+            </div>
+            <svg class="gis" id="gisMap" viewBox="0 0 640 380" width="100%" height="420"></svg>
+            <div class="legend">
+              <div class="li"><span class="dot" style="background:var(--emerald)"></span>Verified</div>
+              <div class="li"><span class="dot" style="background:var(--amber)"></span>Review</div>
+              <div class="li"><span class="dot" style="background:var(--red)"></span>Conflict</div>
+              <div class="li"><span class="dot" style="background:var(--purple)"></span>AI-detected change</div>
+              <div class="li"><span class="dot" style="background:var(--blue)"></span>Selected</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="gis-right">
+          <div class="card detail-panel" id="explorerDetail">
+            <div class="empty-hint">Select a parcel from the list or map to view its master record, evidence and AI match reasoning.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= HARMONIZATION PIPELINE ================= -->
+    <div class="page" id="page-harmonization">
+
+      <div class="grid g2">
+        <div class="card">
+          <div class="section-title">Automated harmonization run<span class="hint">runs on the parcel you pick below</span></div>
+          <div class="field" style="margin-bottom:12px;">
+            <label style="font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:6px;">Parcel</label>
+            <select id="harmParcelSelect" style="width:100%; padding:9px 12px; border:1px solid var(--line); border-radius:9px; font-size:12.8px; background:#fbfaff; color:var(--ink);"></select>
+          </div>
+          <button class="btn primary" id="runHarmBtn" onclick="runHarmonization()">Run harmonization</button>
+          <hr class="div">
+          <div class="steps" id="harmSteps"></div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="section-title">Outcome</div>
+            <div id="harmOutcome"><div class="empty-hint">Run harmonization to see the outcome.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= CONFLICT CENTER ================= -->
+    <div class="page" id="page-conflicts">
+      <div id="conflictList" class="grid" style="grid-template-columns:1fr; gap:12px;"></div>
+    </div>
+
+    <!-- ================= ANOMALY CENTER ================= -->
+    <div class="page" id="page-anomalies">
+      <div id="anomalyList" class="grid g2"></div>
+    </div>
+
+    <!-- ================= REVIEW QUEUE ================= -->
+    <div class="page" id="page-review">
+      <div class="legal-note" id="reviewReadOnlyNote" style="display:none; margin-bottom:12px; margin-top:0;">👁 This queue is read-only for your role. Approve / reject / investigate actions on flagged conflicts are reserved for the Revenue Officer and Admin roles.</div>
+      <div class="card" style="padding:0;">
+        <table><thead><tr><th>Parcel</th><th>Reason</th><th>Match</th><th>Risk</th><th>Actions</th></tr></thead>
+        <tbody id="reviewBody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- ================= MASTER RECORD ================= -->
+    <div class="page" id="page-master">
+      <div class="card" style="margin-bottom:14px;">
+        <select id="masterParcelSelect" style="padding:9px 12px; border:1px solid var(--line); border-radius:9px; font-size:13px; width:280px; background:#fbfaff; color:var(--ink);"></select>
+      </div>
+      <div id="masterContent"></div>
+    </div>
+
+    <!-- ================= AUDIT TRAIL ================= -->
+    <div class="page" id="page-audit">
+      <div class="card">
+        <div id="auditLog" style="display:flex; flex-direction:column; gap:0;"></div>
+      </div>
+    </div>
+
+    <!-- ================= DATA SOURCES ================= -->
+    <div class="page" id="page-sources">
+      <div class="card" style="padding:0;">
+        <table><thead><tr><th>Source</th><th>Type</th><th>Records</th><th>Last update</th><th>CRS</th><th>Quality</th><th>Reliability</th><th>Status</th></tr></thead>
+        <tbody id="sourcesBody"></tbody></table>
+      </div>
+      <div class="grid g4" style="margin-top:14px;">
+        <div class="card kpi-card" style="--accent:var(--emerald);"><div class="num mono" style="color:var(--emerald)">97%</div><div class="label">Geometry quality</div></div>
+        <div class="card kpi-card" style="--accent:var(--blue);"><div class="num mono" style="color:var(--blue)">93%</div><div class="label">Attribute quality</div></div>
+        <div class="card kpi-card" style="--accent:var(--amber);"><div class="num mono" style="color:var(--amber)">91%</div><div class="label">Completeness</div></div>
+        <div class="card kpi-card" style="--accent:var(--purple);"><div class="num mono" style="color:var(--purple)">96%</div><div class="label">Freshness</div></div>
+      </div>
+    </div>
+
+    <!-- ================= DIGITAL TWIN ================= -->
+    <div class="page" id="page-twin">
+      <div class="twin-toggle">
+        <button class="twin-btn active" onclick="setTwin('2d',this)">2D map</button>
+        <button class="twin-btn" onclick="setTwin('india3d',this)">India 3D map</button>
+        <button class="twin-btn" onclick="setTwin('live',this)">Live Street View</button>
+      </div>
+      <div class="card">
+        <div id="twin2d"><svg class="gis" id="gisMapTwin" viewBox="0 0 640 380" width="100%" height="380"></svg></div>
+        <div id="twinIndia3D" style="display:none;">
+          <div id="indiaMapStage">
+            <div id="indiaMapLoading"><div class="spin"></div>Loading live 3D map of India…</div>
+            <div id="indiaMapHint">🖐️ Drag to rotate/pan · scroll or pinch to zoom · tap any area to open Street View there</div>
+            <div id="indiaMapLoc" class="mono"></div>
+          </div>
+          <p class="legal-note">This is a real, live, pannable 3D map of the whole of India (map data © OpenStreetMap contributors via OpenFreeMap, terrain via public elevation tiles) — not a mock-up. Tilt and rotate freely; buildings extrude in 3D as you zoom into a city. Tap or click anywhere — any state, city, town or street — and it jumps straight into a live Google Street View panorama at that exact spot. Requires the viewer's browser to have internet access.</p>
+        </div>
+        <div id="twinLive" style="display:none;">
+          <div class="live-toolbar">
+            <span class="live-badge"><span class="dot live" style="background:var(--emerald);color:var(--emerald);"></span>Live imagery · Google Street View</span>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <input id="streetViewSearch" type="text" placeholder="Search any place/street in India…" style="font-family:'IBM Plex Mono';font-size:11.5px;padding:7px 11px;border-radius:16px;border:1px solid var(--line);width:220px;background:#fff;color:var(--ink);" onkeydown="if(event.key==='Enter')goToStreetViewSearch()">
+              <button class="btn" style="padding:7px 12px;font-size:11.5px;" onclick="goToStreetViewSearch()">Go</button>
+            </div>
+          </div>
+          <div class="filter-row" id="streetViewQuickCities" style="margin-top:0;margin-bottom:10px;"></div>
+          <div id="liveMapStage">
+            <div class="live-status" id="liveMapStatus"><div class="spin"></div>Loading live Street View imagery…</div>
+            <iframe id="streetViewFrame" title="Google Street View" style="position:absolute;inset:0;width:100%;height:100%;border:0;" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+          </div>
+          <div class="live-toolbar" style="margin-top:10px;margin-bottom:0;">
+            <span id="streetViewCurrentLoc" class="mono" style="font-size:11.5px;color:var(--ink-soft);"></span>
+            <a id="streetViewOpenExternal" href="#" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:600;color:var(--blue);text-decoration:none;">Open in Google Maps ↗</a>
+          </div>
+          <p class="legal-note">Imagery © Google — this is a real, live Street View panorama, not a mock-up. Drag inside the frame to look around and click the arrows on the road surface to walk along the street — this works for any street in India (or anywhere) that Google has photographed, not just this app's parcels. Type a place name into the search box, tap a city chip, or click a parcel elsewhere in the app to jump the panorama there. Requires the viewer's browser to have internet access; imagery is fetched directly from Google, not proxied through this app. Where Google has no coverage at an exact point, it shows the nearest photographed vantage.</p>
+        </div>
+      </div>
+      <div class="card detail-panel" style="margin-top:14px; max-height:none;" id="twinDetail">
+        <div class="empty-hint">Click a block/parcel to see height, footprint, estimated construction year, and permit status.</div>
+      </div>
+    </div>
+
+    <!-- ================= GOVERNANCE ================= -->
+    <div class="page" id="page-governance">
+      <div class="card" style="margin-bottom:14px; padding:0;">
+        <table><thead><tr><th>Role</th><th>Permissions</th><th>Pages accessible</th><th>Last login</th><th>Activity</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">ADMIN</td><td>Full access — manages users, permissions, datasets and approvals across the whole system</td><td style="font-size:11px;color:var(--ink-mute)">All pages, incl. Data upload (any dataset type), Governance</td><td class="mono">2026-08-25 09:12</td><td>High</td></tr>
+          <tr><td class="mono">SURVEY / GIS OFFICER</td><td>Uploads &amp; manages Drone Imagery, ORI, GNSS/CORS survey data, cadastral/spatial datasets</td><td style="font-size:11px;color:var(--ink-mute)">Command center, Data upload (survey/imagery types), Parcel explorer, Harmonization pipeline, Conflicts, Anomalies, Data sources, Digital twin</td><td class="mono">2026-08-26 08:40</td><td>High</td></tr>
+          <tr><td class="mono">REVENUE OFFICER</td><td>Uploads &amp; manages revenue records — survey numbers, ownership, land area, parcel records; approves flagged conflicts</td><td style="font-size:11px;color:var(--ink-mute)">Command center, Data upload (revenue records), Parcel explorer, Conflicts, Anomalies, Review queue (approve/reject), Master record, Audit trail, Data sources, Digital twin</td><td class="mono">2026-08-26 08:55</td><td>High</td></tr>
+          <tr><td class="mono">MUNICIPAL OFFICER</td><td>Uploads &amp; manages municipal GIS layers — buildings, roads, drainage, parks and other municipal assets</td><td style="font-size:11px;color:var(--ink-mute)">Command center, Data upload (municipal layers), Parcel explorer, Conflicts, Anomalies, Data sources, Digital twin</td><td class="mono">2026-08-24 16:02</td><td>Medium</td></tr>
+          <tr><td class="mono">UTILITY OFFICER</td><td>Uploads &amp; manages utility network data — electricity, water supply, drainage, telecom infrastructure</td><td style="font-size:11px;color:var(--ink-mute)">Command center, Data upload (utility network), Parcel explorer, Conflicts, Data sources, Digital twin</td><td class="mono">2026-08-23 12:30</td><td>Medium</td></tr>
+          <tr><td class="mono">GROUND SURVEY OFFICER</td><td>Uploads Ground Truthing (GT) data collected from field surveys</td><td style="font-size:11px;color:var(--ink-mute)">Command center, Data upload (ground truthing), Parcel explorer, Digital twin</td><td class="mono">2026-08-25 11:20</td><td>Medium</td></tr>
+        </tbody></table>
+      </div>
+      <div class="grid g2">
+        <div class="card">
+          <div class="section-title">Data governance principles</div>
+          <ul style="font-size:12.6px; color:var(--ink-soft); line-height:2; padding-left:18px;">
+            <li>Every value keeps its original source — nothing is silently overwritten.</li>
+            <li>Every master record is versioned; prior versions remain queryable.</li>
+            <li>Every AI recommendation is logged with confidence and reasoning.</li>
+            <li>Approvals require an authorized human role — never automatic above a hard threshold.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="section-title">Legal / safety notice</div>
+          <div class="legal-note">This platform is a decision-support tool using illustrative data. It never asserts legal ownership. All outputs are phrased as "recommended harmonized record" or "potential anomaly requiring verification," and every automated suggestion requires authorized human approval before it affects any official record.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<script>
+/* ============================= MOCK DATA ============================= */
+// Zones = land classification groupings from the real SVAMITVA-style cadastral sample
+// (Kalimangalam village, Madurai South taluk, Madurai district, Tamil Nadu).
+const wards = ['Wet Zone','Abadi Zone','Dry Zone','Government Zone'];
+const wardRiskLevel = {'Wet Zone':'Low','Abadi Zone':'Medium','Dry Zone':'High','Government Zone':'Medium'};
+// Real-world anchor points from the uploaded drone-survey / GCP sample dataset (Kalimangalam village, Madurai).
+const wardCoords = {
+  'Wet Zone':[78.1201,9.9249],        // Survey No. 112/2A
+  'Abadi Zone':[78.1213,9.9248],      // Survey Nos. 113/1, 115/1A
+  'Dry Zone':[78.1218,9.9246],        // Survey No. 114/3B
+  'Government Zone':[78.1234,9.9245]  // Survey No. 116/2 (Poromboke)
+};
+
+const sources = [
+  {name:'Drone Imagery', type:'High-res imagery', records:5, last:'2024-02-10', crs:'Local grid', quality:93, reliability:'High', status:'Synced'},
+  {name:'Orthorectified Imagery (ORI)', type:'Remote sensing / imagery', records:5, last:'2024-02-10', crs:'WGS84 / UTM44N', quality:95, reliability:'High', status:'Synced'},
+  {name:'DSM / DTM Datasets', type:'Elevation surface', records:5, last:'2024-02-10', crs:'WGS84 (EGM2008)', quality:92, reliability:'High', status:'Synced'},
+  {name:'Existing Cadastral Maps', type:'Survey / geometry', records:5, last:'2024-03-01', crs:'WGS84 / UTM44N', quality:98, reliability:'High', status:'Synced'},
+  {name:'Revenue Records', type:'Legal / deeds', records:6, last:'2024-03-01', crs:'—', quality:95, reliability:'High', status:'Synced'},
+  {name:'Municipal GIS Layers', type:'Property attributes', records:5, last:'2024-03-01', crs:'WGS84', quality:91, reliability:'High', status:'Synced'},
+  {name:'Utility Network Data', type:'Infrastructure / utilities', records:5, last:'2024-02-11', crs:'WGS84', quality:82, reliability:'Medium', status:'Synced'},
+  {name:'Ground Truthing (GT)', type:'Field verification', records:8, last:'2024-02-12', crs:'WGS84', quality:90, reliability:'High', status:'Synced'},
+  {name:'GNSS / CORS Survey', type:'Geodetic control', records:7, last:'2024-02-12', crs:'WGS84 / ITRF', quality:99, reliability:'High', status:'Synced'}
+];
+
+let schemaMap = [
+  ['Owner_Name / Property_Owner / LandHolder', 'owner_name', 99],
+  ['Survey_No / Parcel_No / Cadastral_ID', 'survey_number', 100],
+  ['Prop_Area / Plot_Area / Extent', 'area_sqm', 97],
+  ['Regd_Owner / Buyer_Name', 'owner_name', 94],
+  ['PID / Property_ID', 'municipal_ref', 100],
+  ['Land_Use / Zone_Type', 'land_use', 96]
+];
+
+// ===== REAL SAMPLE DATASET: Kalimangalam village, Madurai South taluk, Madurai, Tamil Nadu =====
+// Sourced from the uploaded cadastral_parcels.geojson, revenue_records.csv, ground_control_points.csv,
+// gnss_cors_metadata.csv and utility_network.geojson — all joined on parcel_id.
+const parcels = [
+  {
+    id:'TN-MDU-VLG04-0112', surveyNo:'112/2A', ward:'Wet Zone',
+    village:'Kalimangalam', taluk:'Madurai South', district:'Madurai',
+    owners:{ cadastral:'Muthu Krishnan', registration:'Muthu Krishnan', municipal:'M. Krishnan' },
+    area:{ cadastral:2450.6, registration:2450.6, municipal:2450.6 },
+    status:'verified', anomaly:null, matchConfidence:98, dataHealth:97,
+    landUse:'Agricultural', classification:'Wet',
+    address:'Survey No. 112/2A, Kalimangalam Village, Madurai South Taluk',
+    permit:'Not applicable (Agricultural)', encumbrance:'Clear',
+    mutation:{no:'MUT-2019-0345', date:'2019-06-14', reason:'Inheritance'},
+    buildingHistory:{2023:0, 2024:0, 2025:0, 2026:0},
+    gcp:['GCP-001','GCP-002'], gnssSession:'Rover-Team-A-Session1',
+    utility:['PWR-LINE-0041','WTR-PIPE-0077','SWR-LINE-0033'],
+    x:60, y:40, lng:78.1198, lat:9.9252,
+    versions:[
+      {v:1, year:2024, area:2450.6, owner:'Muthu Krishnan', building:0},
+      {v:2, year:2025, area:2450.6, owner:'Muthu Krishnan', building:0},
+      {v:3, year:2026, area:2450.6, owner:'Muthu Krishnan', building:0}
+    ]
+  },
+  {
+    id:'TN-MDU-VLG04-0113', surveyNo:'113/1', ward:'Abadi Zone',
+    village:'Kalimangalam', taluk:'Madurai South', district:'Madurai',
+    owners:{ cadastral:'Selvi Meenakshi / Kannan Palanisamy', registration:'Selvi Meenakshi (1/2), Kannan Palanisamy (1/2)', municipal:'S. Meenakshi & K. Palanisamy' },
+    area:{ cadastral:1875.2, registration:1875.2, municipal:1875.2 },
+    status:'review', anomaly:'MEDIUM', matchConfidence:84, dataHealth:91,
+    landUse:'Residential', classification:'Abadi',
+    address:'Survey No. 113/1, Kalimangalam Village, Madurai South Taluk',
+    permit:'On file (2020)', encumbrance:'Clear',
+    mutation:{no:'MUT-2020-0122', date:'2020-02-27', reason:'Sale Deed'},
+    buildingHistory:{2023:140, 2024:145, 2025:145, 2026:150},
+    gcp:['GCP-003'], gnssSession:'Rover-Team-A-Session2',
+    utility:['PWR-LINE-0041','PWR-POLE-0102','WTR-PIPE-0077','WTR-VALVE-0015'],
+    x:155, y:40, lng:78.1206, lat:9.9251,
+    versions:[
+      {v:1, year:2024, area:1875.2, owner:'Selvi Meenakshi / Kannan Palanisamy', building:140},
+      {v:2, year:2025, area:1875.2, owner:'Selvi Meenakshi / Kannan Palanisamy', building:145},
+      {v:3, year:2026, area:1875.2, owner:'Selvi Meenakshi / Kannan Palanisamy', building:150}
+    ]
+  },
+  {
+    id:'TN-MDU-VLG04-0114', surveyNo:'114/3B', ward:'Dry Zone',
+    village:'Kalimangalam', taluk:'Madurai South', district:'Madurai',
+    owners:{ cadastral:'Sri Andal Trust', registration:'Sri Andal Trust', municipal:'Sri Andal Trust' },
+    area:{ cadastral:5620.4, registration:5620.4, municipal:5620.4 },
+    status:'conflict', anomaly:'HIGH', matchConfidence:79, dataHealth:85,
+    landUse:'Agricultural', classification:'Dry',
+    address:'Survey No. 114/3B, Kalimangalam Village, Madurai South Taluk',
+    permit:'Not found', encumbrance:'Litigation Pending',
+    mutation:{no:'MUT-2015-0088', date:'2015-11-03', reason:'Trust Registration'},
+    buildingHistory:{2023:0, 2024:0, 2025:0, 2026:0},
+    gcp:['GCP-004','GCP-005'], gnssSession:'Rover-Team-B-Session1',
+    utility:['WTR-PIPE-0077','SWR-LINE-0033'],
+    x:250, y:40, lng:78.1213, lat:9.9250,
+    versions:[
+      {v:1, year:2024, area:5620.4, owner:'Sri Andal Trust', building:0},
+      {v:2, year:2025, area:5620.4, owner:'Sri Andal Trust', building:0},
+      {v:3, year:2026, area:5620.4, owner:'Sri Andal Trust', building:0}
+    ]
+  },
+  {
+    id:'TN-MDU-VLG04-0115', surveyNo:'115/1A', ward:'Abadi Zone',
+    village:'Kalimangalam', taluk:'Madurai South', district:'Madurai',
+    owners:{ cadastral:'Rajendran M', registration:'Rajendran M', municipal:'RAJENDRAN M' },
+    area:{ cadastral:980.1, registration:980.1, municipal:1020.0 },
+    status:'ai-change', anomaly:'LOW', matchConfidence:90, dataHealth:93,
+    landUse:'Commercial', classification:'Abadi',
+    address:'Survey No. 115/1A, Kalimangalam Village, Madurai South Taluk',
+    permit:'On file (2022)', encumbrance:'Clear',
+    mutation:{no:'MUT-2022-0501', date:'2022-08-19', reason:'Sale Deed'},
+    buildingHistory:{2023:180, 2024:190, 2025:195, 2026:230},
+    gcp:['GCP-006'], gnssSession:'Rover-Team-B-Session2',
+    utility:['PWR-LINE-0041','SWR-LINE-0033'],
+    x:345, y:40, lng:78.1224, lat:9.9249,
+    versions:[
+      {v:1, year:2024, area:980.1, owner:'Rajendran M', building:180},
+      {v:2, year:2025, area:980.1, owner:'Rajendran M', building:195},
+      {v:3, year:2026, area:1020.0, owner:'Rajendran M', building:230}
+    ]
+  },
+  {
+    id:'TN-MDU-VLG04-0116', surveyNo:'116/2', ward:'Government Zone',
+    village:'Kalimangalam', taluk:'Madurai South', district:'Madurai',
+    owners:{ cadastral:'Government of Tamil Nadu', registration:'Government of Tamil Nadu', municipal:'Government of Tamil Nadu' },
+    area:{ cadastral:3120.9, registration:3120.9, municipal:3120.9 },
+    status:'verified', anomaly:'MEDIUM', matchConfidence:96, dataHealth:94,
+    landUse:'Government', classification:'Poromboke',
+    address:'Survey No. 116/2, Kalimangalam Village, Madurai South Taluk',
+    permit:'Not applicable (Government Land)', encumbrance:'Not Applicable',
+    mutation:{no:'N/A', date:'N/A', reason:'Original Grant'},
+    buildingHistory:{2023:0, 2024:0, 2025:0, 2026:0},
+    gcp:['GCP-007','GCP-008'], gnssSession:'Rover-Team-A-Session3',
+    utility:[],
+    x:440, y:40, lng:78.1230, lat:9.9248,
+    versions:[
+      {v:1, year:2024, area:3120.9, owner:'Government of Tamil Nadu', building:0},
+      {v:2, year:2025, area:3120.9, owner:'Government of Tamil Nadu', building:0},
+      {v:3, year:2026, area:3120.9, owner:'Government of Tamil Nadu', building:0}
+    ]
+  }
+];
+
+let auditLog = [
+  {time:'09:10', actor:'AI', text:'Matched Revenue record RR-2024-0113-A/B → TN-MDU-VLG04-0113', detail:'Joint ownership detected — confidence: 84%'},
+  {time:'09:12', actor:'AI', text:'Detected ownership-share conflict on TN-MDU-VLG04-0113', detail:'Two co-owners at 1/2 share each — flagged for revenue officer review'},
+  {time:'09:20', actor:'AI', text:'Encumbrance flag ingested for TN-MDU-VLG04-0114', detail:'Revenue record RR-2024-0114-A marked "Litigation Pending" — HIGH anomaly raised'},
+  {time:'09:26', actor:'AI', text:'Satellite change detected on TN-MDU-VLG04-0115', detail:'Commercial building footprint +35 sq.m (2025 → 2026), municipal area diverges from cadastral by 39.9 sq.m'},
+  {time:'09:31', actor:'AI', text:'GCP validation completed for parcel boundaries', detail:'8 ground control points cross-checked against Survey-of-India CORS station (RTK horizontal accuracy 0.02–0.03m)'}
+];
+
+let selectedParcelId = null;
+let currentStatusFilter = 'all';
+let currentRole = null;
+
+/* ============================= NAVIGATION ============================= */
+const titles = {
+  dashboard:['Command center','Kalimangalam village pilot — SVAMITVA-style land record harmonization'],
+  upload:['Data upload','Upload role-scoped datasets — validation, CRS check, geo-referencing and standardization run automatically'],
+  explorer:['Parcel explorer','Search, inspect and cross-check any parcel across all connected sources'],
+  harmonization:['Harmonization pipeline','Step-by-step AI matching, from schema mapping to outcome'],
+  conflicts:['Conflict center','Attribute and geometry disagreements between sources'],
+  anomalies:['Anomaly center','Satellite-detected changes with no matching regulatory record'],
+  review:['Human-in-the-loop review','Cases awaiting authorized officer decision'],
+  master:['Master land record','Versioned, source-attributed record of truth'],
+  audit:['Audit trail','Every system action and human decision, timestamped'],
+  sources:['Data sources','Connected systems feeding the harmonization pipeline'],
+  twin:['Urban digital twin','Illustrative 2D/3D view of parcels and buildings'],
+  governance:['Governance & security','Roles, permissions and data governance principles']
+};
+
+document.querySelectorAll('.navitem[data-page]').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    if(el.style.display === 'none') return; // role-restricted page
+    const page = el.dataset.page;
+    document.querySelectorAll('.navitem').forEach(n=>n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.getElementById('page-'+page).classList.add('active');
+    document.getElementById('pageTitle').textContent = titles[page][0];
+  });
+});
+
+/* ============================= ROLE-BASED ACCESS ============================= */
+const ROLE_PAGES = {
+  admin:             ['dashboard','upload','explorer','harmonization','conflicts','anomalies','review','master','audit','sources','twin','governance'],
+  gis_officer:       ['dashboard','upload','explorer','harmonization','conflicts','anomalies','sources','twin'],
+  revenue_officer:   ['dashboard','upload','explorer','conflicts','anomalies','review','master','audit','sources','twin'],
+  municipal_officer: ['dashboard','upload','explorer','conflicts','anomalies','sources','twin'],
+  utility_officer:   ['dashboard','upload','explorer','conflicts','sources','twin'],
+  ground_officer:    ['dashboard','upload','explorer','twin']
+};
+// Dataset types each role is authorized to upload (Admin can upload any of them).
+const DATASET_TYPES_BY_ROLE = {
+  admin: [
+    ['drone','Drone Imagery'], ['ori','Orthorectified Imagery (ORI)'], ['dsm','DSM / DTM Dataset'],
+    ['gnss','GNSS / CORS Survey Data'], ['cadastral','Cadastral / Spatial Dataset'],
+    ['revenue','Revenue Records (survey no., ownership, area)'],
+    ['municipal','Municipal GIS Layer (buildings, roads, drainage, parks)'],
+    ['utility','Utility Network Data (electricity, water, telecom, drainage)'],
+    ['gt','Ground Truthing (GT) Data']
+  ],
+  gis_officer: [
+    ['drone','Drone Imagery'], ['ori','Orthorectified Imagery (ORI)'], ['dsm','DSM / DTM Dataset'],
+    ['gnss','GNSS / CORS Survey Data'], ['cadastral','Cadastral / Spatial Dataset']
+  ],
+  revenue_officer: [ ['revenue','Revenue Records (survey no., ownership, area)'] ],
+  municipal_officer: [ ['municipal','Municipal GIS Layer (buildings, roads, drainage, parks)'] ],
+  utility_officer: [ ['utility','Utility Network Data (electricity, water, telecom, drainage)'] ],
+  ground_officer: [ ['gt','Ground Truthing (GT) Data'] ]
+};
+const DATASET_FORMATS = {
+  drone:['GeoTIFF','TIFF','JPEG2000','JPEG'], ori:['GeoTIFF','TIFF','JPEG'], dsm:['GeoTIFF','TIFF'],
+  gnss:['CSV','XLSX','JSON'], cadastral:['Shapefile','GeoJSON','KML'],
+  revenue:['CSV','XLSX','JSON'], municipal:['Shapefile','GeoJSON','KML'],
+  utility:['Shapefile','GeoJSON','KML','CSV'], gt:['CSV','XLSX','GeoJSON','JSON']
+};
+// Extensions accepted on disk for each declared format label (a plain photo export
+// is still saved as .jpg/.jpeg even though the format is displayed as "JPEG").
+const FORMAT_EXTENSIONS = {
+  GeoTIFF:['tif','tiff'], TIFF:['tif','tiff'], JPEG2000:['jp2','j2k'], JPEG:['jpg','jpeg'],
+  CSV:['csv'], XLSX:['xlsx','xls'], JSON:['json'],
+  Shapefile:['shp','zip'], GeoJSON:['geojson','json'], KML:['kml']
+};
+const roleLabels = {admin:'Admin', gis_officer:'Survey / GIS Officer', revenue_officer:'Revenue Officer', municipal_officer:'Municipal Officer', utility_officer:'Utility Officer', ground_officer:'Ground Survey Officer'};
+
+/* ============================= SAMPLE FILE TEMPLATES ============================= */
+const SAMPLE_CSV_FULL = `id,ward,surveyno,owner,owner_registration,owner_municipal,area,area_registration,area_municipal,status,anomaly,matchconfidence,datahealth,landuse,address,permit,building_2023,building_2024,building_2025,building_2026,lat,lng
+MP-2000001,Ward 1,210/1A,Rajesh Iyer,Rajesh Iyer,Rajesh I.,265,265,265,verified,,96,95,Residential,"12, Anna Nagar 4th St, Ward 1",On file (2024),210,220,230,235,13.0850,80.2101
+MP-2000002,Ward 1,210/2A,Fatima Begum,Fatima Begum,FATIMA BEGUM,300,300,312,conflict,,88,90,Commercial,"18, Gandhi Rd, Ward 1",On file (2023),250,260,270,275,13.0857,80.2110
+MP-2000003,Ward 2,211/1B,Suresh Kumar,Suresh Kumar,Suresh K.,240,240,240,review,MEDIUM,84,91,Residential,"22, Kamaraj Colony, Ward 2",On file (2024),190,200,215,260,13.0410,80.2335
+MP-2000004,Ward 2,211/3A,Meena Ravi,Meena Ravi,Meena R.,410,410,410,verified,,97,96,Commercial,"9, Nehru St Ext, Ward 2",On file (2025),350,360,370,375,13.0425,80.2350
+MP-2000005,Ward 3,212/1A,Karthik Raj,Karthik Raj,KARTHIK RAJ,220,220,255,conflict,HIGH,79,88,Residential,"31, Periyar Rd, Ward 3",Not found,180,190,200,260,13.0330,80.2610
+MP-2000006,Ward 3,212/2C,Lakshmi Narayan,Lakshmi Narayan,Lakshmi N.,275,275,275,verified,,95,94,Residential,"5, Bharathi Nagar, Ward 3",On file (2024),230,240,248,252,13.0345,80.2625
+MP-2000007,Ward 4,213/1A,Ganesh Babu,Ganesh Babu,Ganesh B.,330,330,330,ai-change,LOW,90,93,Residential,"14, Tank Bund Rd, Ward 4",On file (2025),270,282,295,320,13.0060,80.2495
+MP-2000008,Ward 4,213/2B,Deepa Subramaniam,Deepa Subramaniam,DEEPA S.,190,190,190,verified,,98,97,Residential,"27, MGR Colony, Ward 4",On file (2024),160,168,175,178,13.0075,80.2510
+MP-2000009,Ward 1,214/1A,Vijay Anand,Vijay Anand,Vijay A.,520,520,585,conflict,CRITICAL,72,85,Commercial,"3, Anna Nagar 4th St, Ward 1",Not found,430,440,455,600,13.0862,80.2095
+MP-2000010,Ward 2,214/2A,Kavitha Ramesh,Kavitha Ramesh,Kavitha R.,260,260,260,verified,,94,92,Residential,"41, Kamaraj Colony, Ward 2",On file (2023),210,220,232,238,13.0400,80.2345`;
+
+const SAMPLE_CSV_MINIMAL = `id,ward,surveyno,owner,area
+MP-3000001,Ward 1,301/1A,Arvind Selvam,240
+MP-3000002,Ward 1,301/2A,Nithya Prakash,275
+MP-3000003,Ward 2,302/1A,Baskar Moorthy,310
+MP-3000004,Ward 2,302/2B,Revathi Chandran,190
+MP-3000005,Ward 3,303/1A,Manoj Pillai,260
+MP-3000006,Ward 3,303/2A,Sangeetha Vel,225
+MP-3000007,Ward 4,304/1A,Dinesh Kannan,340
+MP-3000008,Ward 4,304/2B,Anitha Raman,205`;
+function applyRoleAccess(role){
+  const allowed = ROLE_PAGES[role] || ROLE_PAGES.admin;
+  document.querySelectorAll('.navitem[data-page]').forEach(el=>{
+    el.style.display = allowed.includes(el.dataset.page) ? '' : 'none';
+  });
+  document.querySelectorAll('.navgroup').forEach(group=>{
+    let sib = group.nextElementSibling, visible = false;
+    while(sib && sib.classList.contains('navitem')){
+      if(sib.style.display !== 'none') visible = true;
+      sib = sib.nextElementSibling;
+    }
+    group.style.display = visible ? '' : 'none';
+  });
+  const activeNav = document.querySelector('.navitem.active');
+  if(!activeNav || activeNav.style.display === 'none'){
+    document.querySelector('.navitem[data-page="dashboard"]').click();
+  }
+  populateUploadPage(role);
+}
+
+/* ============================= DATA UPLOAD PAGE ============================= */
+function populateUploadPage(role){
+  const types = DATASET_TYPES_BY_ROLE[role] || DATASET_TYPES_BY_ROLE.admin;
+  const sel = document.getElementById('uploadDatasetType');
+  sel.innerHTML = types.map(([v,label])=>`<option value="${v}">${label}</option>`).join('');
+  const note = document.getElementById('uploadRoleNote');
+  note.textContent = `👤 Signed in as ${roleLabels[role]||role} — you can upload: ${types.map(t=>t[1]).join(', ')}. Admin can see and upload every dataset type.`;
+  updateUploadFormats();
+  resetUploadWidget();
+}
+function updateUploadFormats(){
+  const type = document.getElementById('uploadDatasetType').value;
+  const formats = DATASET_FORMATS[type] || [];
+  document.getElementById('uploadFormatChips').innerHTML = formats.map(f=>`<span class="filter-chip active" style="cursor:default;">${f}</span>`).join('');
+  document.getElementById('dzSub').textContent = formats.join(' · ');
+}
+document.getElementById('uploadDatasetType').addEventListener('change', updateUploadFormats);
+function resetUploadWidget(){
+  document.getElementById('uploadFileInput').value = '';
+  document.getElementById('uploadDropzone').classList.remove('filled');
+  document.getElementById('dzTitle').textContent = 'Click to choose a file, or drag one here';
+  document.getElementById('runUploadBtn').disabled = true;
+  document.getElementById('uploadSteps').innerHTML = '';
+}
+function onUploadFileChosen(input){
+  if(!input.files || !input.files[0]) return;
+  const f = input.files[0];
+  const type = document.getElementById('uploadDatasetType').value;
+  const allowedFormats = DATASET_FORMATS[type] || [];
+  const ext = (f.name.split('.').pop() || '').toLowerCase();
+  const allowedExts = allowedFormats.flatMap(fmt => FORMAT_EXTENSIONS[fmt] || []);
+  const dz = document.getElementById('uploadDropzone');
+  if(allowedExts.length && !allowedExts.includes(ext)){
+    dz.classList.remove('filled');
+    document.getElementById('dzTitle').textContent = `✗ .${ext || '?'} isn't accepted for this dataset type — use ${allowedFormats.join(' · ')}`;
+    document.getElementById('runUploadBtn').disabled = true;
+    input.value = '';
+    return;
+  }
+  dz.classList.add('filled');
+  document.getElementById('dzTitle').textContent = `✓ ${f.name} (${(f.size/1024).toFixed(1)} KB) ready to process`;
+  document.getElementById('runUploadBtn').disabled = false;
+}
+const uploadPipelineSteps = [
+  {name:'File validation', desc:'Checking file integrity, format and required fields.'},
+  {name:'Data cleaning', desc:'Removing empty geometries, duplicate records and malformed rows.'},
+  {name:'CRS check', desc:'Detecting the coordinate reference system of the uploaded file.'},
+  {name:'Geo-referencing & coordinate transformation', desc:'Reprojecting into the common CRS (WGS84 / EPSG:4326).'},
+  {name:'Standardization', desc:'Mapping fields into the master schema and tagging with a confidence score.'}
+];
+let uploadRunning = false;
+
+/* ============================= REAL FILE PARSING ============================= */
+function splitCSVLine(line){
+  const out=[]; let cur=''; let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c = line[i];
+    if(c === '"'){
+      if(inQ && line[i+1] === '"'){ cur+='"'; i++; } else { inQ = !inQ; }
+    } else if(c===',' && !inQ){ out.push(cur); cur=''; }
+    else { cur+=c; }
+  }
+  out.push(cur);
+  return out;
+}
+function parseCSV(text){
+  const lines = text.replace(/^\uFEFF/,'').replace(/\r/g,'').split('\n').filter(l=>l.trim().length);
+  if(!lines.length) return [];
+  const headers = splitCSVLine(lines[0]).map(h=>h.trim().toLowerCase());
+  return lines.slice(1).map(line=>{
+    const cells = splitCSVLine(line);
+    const obj = {};
+    headers.forEach((h,i)=> obj[h] = (cells[i]!==undefined ? cells[i].trim() : ''));
+    return obj;
+  });
+}
+function pick(row, keys, def){
+  for(const k of keys){
+    if(row[k]!==undefined && row[k]!==null && String(row[k]).trim()!=='') return String(row[k]).trim();
+  }
+  return def;
+}
+function ensureWard(name, lat, lng){
+  if(!name) return;
+  if(!wards.includes(name)){
+    wards.push(name);
+    wardRiskLevel[name] = wardRiskLevel[name] || 'Medium';
+    wardCoords[name] = [ (lng!==undefined?lng:80.2350), (lat!==undefined?lat:13.0450) ];
+  }
+}
+/* ---- GeoJSON support: flatten features into row objects with a centroid lat/lng ---- */
+function centroidOfGeometry(geom){
+  if(!geom || !geom.coordinates) return null;
+  try{
+    if(geom.type==='Point'){ const [lng,lat]=geom.coordinates; return {lat,lng}; }
+    if(geom.type==='LineString'){
+      const c = geom.coordinates, n = c.length;
+      return { lat: c.reduce((s,p)=>s+p[1],0)/n, lng: c.reduce((s,p)=>s+p[0],0)/n };
+    }
+    if(geom.type==='Polygon'){
+      const ring = geom.coordinates[0], n = ring.length;
+      return { lat: ring.reduce((s,p)=>s+p[1],0)/n, lng: ring.reduce((s,p)=>s+p[0],0)/n };
+    }
+  }catch(e){}
+  return null;
+}
+function flattenGeoJSON(data){
+  return (data.features||[]).map(f=>{
+    const row = {};
+    Object.keys(f.properties||{}).forEach(k=> row[k.toLowerCase()] = f.properties[k]);
+    const c = centroidOfGeometry(f.geometry);
+    if(c){ row.lat = c.lat; row.lng = c.lng; }
+    return row;
+  });
+}
+
+/* ---- Zone (ward) derivation straight from land classification, so cadastral / ----
+   revenue uploads don't need an explicit "ward" column at all ---- */
+function deriveWard(row){
+  const explicit = pick(row,['ward'], '');
+  if(explicit) return explicit;
+  const cls = (pick(row,['classification','land_classification'],'')||'').toLowerCase();
+  const use = (pick(row,['landuse','land_use'],'')||'').toLowerCase();
+  if(cls.includes('wet')) return 'Wet Zone';
+  if(cls.includes('dry')) return 'Dry Zone';
+  if(cls.includes('abadi')) return 'Abadi Zone';
+  if(cls.includes('poromboke') || use.includes('government')) return 'Government Zone';
+  if(use.includes('commercial') || use.includes('residential')) return 'Abadi Zone';
+  if(use.includes('agricultural')) return 'Dry Zone';
+  return 'Government Zone';
+}
+
+/* ---- Row classifiers: which of the 5 real dataset shapes is this row? ---- */
+function isGcpRow(row){ return !!pick(row,['gcp_id'],''); }
+function isGnssRow(row){ return !!pick(row,['station_id'],''); }
+function isUtilityRow(row){ return !!pick(row,['asset_id'],''); }
+
+function findParcelById(id){ return parcels.find(p=>p.id===id); }
+
+/* ---- Spatial fallback matching: when a row carries no parcel_id (or its own linking id like ----
+   gcp_id/station_id/asset_id can't be resolved to a parcel directly), fall back to whichever
+   existing parcel is geographically closest to the row's lat/lng. This lets ANY dataset type —
+   municipal layers, utility networks, GNSS sessions, GT records — update a parcel purely from
+   location, so having a parcel_id column is a convenience, not a requirement. ---- */
+function approxMetersBetween(lat1,lng1,lat2,lng2){
+  const dLat=(lat2-lat1)*110540; // meters per degree of latitude (approx, good enough locally)
+  const dLng=(lng2-lng1)*111320*Math.cos((lat1||0)*Math.PI/180);
+  return Math.sqrt(dLat*dLat+dLng*dLng);
+}
+function nearestParcelByLocation(lat,lng){
+  if(isNaN(lat)||isNaN(lng)||!parcels.length) return null;
+  let best=null, bestDist=Infinity;
+  parcels.forEach(p=>{
+    if(p.lat===undefined||p.lng===undefined) return;
+    const d = approxMetersBetween(lat,lng,p.lat,p.lng);
+    if(d<bestDist){ bestDist=d; best=p; }
+  });
+  return best ? {parcel:best, distanceM:Math.round(bestDist)} : null;
+}
+function rowLatLng(row){
+  const lat=parseFloat(pick(row,['lat','latitude'],'')), lng=parseFloat(pick(row,['lng','lon','longitude'],''));
+  return (!isNaN(lat)&&!isNaN(lng)) ? {lat,lng} : null;
+}
+
+/* ---- Core merge engine: upserts uploaded rows into the live `parcels` array ---- */
+function mergeRowsIntoParcels(rows, typeLabel){
+  let created=0, merged=0, gcpLinked=0, gnssLinked=0, utilityLinked=0, spatialLinked=0, skipped=0, routedToReview=0;
+  const touchedIds = new Set();
+  const notes = [];
+
+  rows.forEach((row,i)=>{
+    // --- Ground control point row: attach to its parcel, nudge data health up ---
+    if(isGcpRow(row)){
+      const pid = pick(row,['parcel_id'],'');
+      let p = pid && findParcelById(pid);
+      let spatial=false;
+      if(!p){
+        const loc = rowLatLng(row);
+        const near = loc && nearestParcelByLocation(loc.lat, loc.lng);
+        if(near){ p = near.parcel; spatial = true; }
+      }
+      if(p){
+        p.gcp = p.gcp || [];
+        const gid = pick(row,['gcp_id'],'');
+        if(gid && !p.gcp.includes(gid)) p.gcp.push(gid);
+        p.dataHealth = Math.min(99, (p.dataHealth||90) + 1);
+        gcpLinked++; touchedIds.add(p.id);
+        if(spatial){ spatialLinked++; notes.push(`${gid||'GCP row'} → ${p.id}: no parcel_id in file, linked to the nearest parcel by location.`); }
+      } else skipped++;
+      return;
+    }
+    // --- GNSS/CORS session row: attach the survey session to its parcel ---
+    if(isGnssRow(row)){
+      const pid = pick(row,['parcel_id_surveyed'],'');
+      let p = pid && pid!=='ALL_PARCELS_VLG04' && findParcelById(pid);
+      let spatial=false;
+      if(!p){
+        const loc = rowLatLng(row);
+        const near = loc && nearestParcelByLocation(loc.lat, loc.lng);
+        if(near){ p = near.parcel; spatial = true; }
+      }
+      if(p){
+        p.gnssSession = pick(row,['station_id'],p.gnssSession||'');
+        gnssLinked++; touchedIds.add(p.id);
+        if(spatial) { spatialLinked++; notes.push(`${pick(row,['station_id'],'GNSS session')} → ${p.id}: no parcel_id_surveyed in file, linked to the nearest parcel by location.`); }
+      } else skipped++;
+      return;
+    }
+    // --- Utility network row: link the asset to every adjacent parcel ---
+    if(isUtilityRow(row)){
+      const assetId = pick(row,['asset_id'],'');
+      const adjRaw = pick(row,['adjacent_parcel_ids','parcel_id'],'');
+      let ids = adjRaw.split(',').map(s=>s.trim()).filter(Boolean);
+      let spatial=false;
+      if(!ids.length){
+        const loc = rowLatLng(row);
+        const near = loc && nearestParcelByLocation(loc.lat, loc.lng);
+        if(near){ ids = [near.parcel.id]; spatial = true; }
+      }
+      let any=false;
+      ids.forEach(id=>{
+        const p = findParcelById(id);
+        if(p){ p.utility = p.utility||[]; if(!p.utility.includes(assetId)) p.utility.push(assetId); any=true; touchedIds.add(p.id); }
+      });
+      if(any){ utilityLinked++; if(spatial){ spatialLinked++; notes.push(`${assetId||'Utility asset'} → ${ids[0]}: no adjacent_parcel_ids in file, linked to the nearest parcel by location.`); } }
+      else skipped++;
+      return;
+    }
+
+    // --- Otherwise: a parcel-level row (cadastral geometry, revenue record, or generic upload) ---
+    let id = pick(row,['parcel_id','id','parcelid','mp_id'], '');
+    let spatialMatch = false;
+    if(!id){
+      // No parcel_id column at all (common for municipal layers, GT records, etc.) — if the
+      // row still carries coordinates (explicit lat/lng, or a centroid flattened from geometry),
+      // link it to whichever parcel is geographically closest instead of dropping the row.
+      const loc = rowLatLng(row);
+      const near = loc && nearestParcelByLocation(loc.lat, loc.lng);
+      if(near){ id = near.parcel.id; spatialMatch = true; }
+    }
+    if(!id){ skipped++; return; }
+    const surveyNo = pick(row,['surveyno','survey_no','survey number'], '');
+    const owner = pick(row,['owner','owner_name','ownername','cadastral_owner'], '');
+    const areaRaw = pick(row,['area','area_sqm','area_sq_m','extent'], '');
+    const area = areaRaw ? parseFloat(areaRaw) : null;
+    const existing = findParcelById(id);
+
+    if(existing){
+      // Merge: only overwrite fields the uploaded row actually supplies.
+      if(surveyNo) existing.surveyNo = surveyNo;
+      if(owner){
+        existing.owners = existing.owners || {};
+        if(!existing.owners.cadastral || existing.owners.cadastral==='Unknown') existing.owners.cadastral = owner;
+        existing.owners.registration = pick(row,['owner_registration','registration_owner'], owner);
+        const mun = pick(row,['owner_municipal','municipal_owner'], '');
+        existing.owners.municipal = mun || (!existing.owners.municipal || existing.owners.municipal==='Unknown' ? owner : existing.owners.municipal);
+      }
+      if(area!==null){
+        existing.area = existing.area || {};
+        const priorCadastral = existing.area.cadastral;
+        existing.area.registration = area;
+        if(priorCadastral!==undefined && Math.abs(priorCadastral-area) > 0.5){
+          existing.status = 'conflict';
+          existing.anomaly = existing.anomaly || 'MEDIUM';
+          notes.push(`Area mismatch on ${id}: cadastral ${priorCadastral} sq.m vs uploaded ${area} sq.m`);
+        } else if(existing.area.cadastral===undefined){
+          existing.area.cadastral = area; existing.area.municipal = area;
+        }
+      }
+      const village = pick(row,['village'],''); if(village) existing.village = village;
+      const taluk = pick(row,['taluk'],''); if(taluk) existing.taluk = taluk;
+      const district = pick(row,['district'],''); if(district) existing.district = district;
+      const classification = pick(row,['classification','land_classification'],''); if(classification) existing.classification = classification;
+      const landUse = pick(row,['landuse','land_use'],''); if(landUse) existing.landUse = landUse;
+      const encumbrance = pick(row,['encumbrance_status'],''); if(encumbrance){
+        existing.encumbrance = encumbrance;
+        if(encumbrance.toLowerCase().includes('litigation') || encumbrance.toLowerCase().includes('pending')){
+          existing.status='review'; existing.anomaly='HIGH';
+          notes.push(`HIGH severity — ${id} auto-routed to Review queue: encumbrance "${encumbrance}"`);
+          routedToReview++;
+        }
+      }
+      const mutNo = pick(row,['mutation_no'],''), mutDate = pick(row,['mutation_date'],''), mutReason = pick(row,['mutation_reason'],'');
+      if(mutNo || mutDate || mutReason) existing.mutation = {no:mutNo||existing.mutation?.no, date:mutDate||existing.mutation?.date, reason:mutReason||existing.mutation?.reason};
+      const lat = parseFloat(pick(row,['lat','latitude'],'')), lng = parseFloat(pick(row,['lng','lon','longitude'],''));
+      if(!isNaN(lat) && !isNaN(lng)){ existing.lat = lat; existing.lng = lng; }
+      // Optional per-year building footprint columns (used to detect AI/satellite footprint change).
+      const b23=pick(row,['building_2023'],''), b24=pick(row,['building_2024'],''), b25=pick(row,['building_2025'],''), b26=pick(row,['building_2026'],'');
+      if(b23||b24||b25||b26){
+        existing.buildingHistory = existing.buildingHistory || {2023:0,2024:0,2025:0,2026:0};
+        if(b23!=='') existing.buildingHistory[2023]=parseFloat(b23);
+        if(b24!=='') existing.buildingHistory[2024]=parseFloat(b24);
+        if(b25!=='') existing.buildingHistory[2025]=parseFloat(b25);
+        if(b26!=='') existing.buildingHistory[2026]=parseFloat(b26);
+      }
+      // Explicit status/anomaly/confidence columns (if your file supplies them) override the auto-detected ones above.
+      const explicitStatus = pick(row,['status'],''), explicitAnomaly = pick(row,['anomaly'],'');
+      const explicitConf = pick(row,['matchconfidence','matchConfidence'],''), explicitHealth = pick(row,['datahealth','dataHealth'],'');
+      if(explicitStatus){
+        if(explicitStatus==='review' && existing.status!=='review') routedToReview++;
+        existing.status = explicitStatus;
+        notes.push(`${id}: status set explicitly from uploaded file → "${explicitStatus}"`);
+      }
+      if(explicitAnomaly) existing.anomaly = explicitAnomaly;
+      if(explicitConf) existing.matchConfidence = parseFloat(explicitConf);
+      if(explicitHealth) existing.dataHealth = parseFloat(explicitHealth);
+      if(spatialMatch){ spatialLinked++; notes.push(`${id}: no parcel_id column in ${typeLabel||'file'}, matched to nearest parcel by location.`); }
+      merged++; touchedIds.add(id);
+    } else {
+      // Create a new parcel — need at least survey number + area to make this meaningful.
+      if(!surveyNo || area===null){ skipped++; return; }
+      const ward = deriveWard(row);
+      ensureWard(ward);
+      let lat = parseFloat(pick(row,['lat','latitude'],'')), lng = parseFloat(pick(row,['lng','lon','longitude'],''));
+      if(isNaN(lat)||isNaN(lng)){
+        const c = wardCoords[ward] || [78.1210,9.9250];
+        lng = c[0] + (((i*37)%11)-5)*0.0011; lat = c[1] + (((i*53)%11)-5)*0.0011;
+      }
+      const landUse = pick(row,['landuse','land_use'], 'Residential');
+      const classification = pick(row,['classification','land_classification'], '');
+      const b = area*0.86;
+      const newEncumbrance = pick(row,['encumbrance_status'],'Unknown');
+      const isSevere = newEncumbrance.toLowerCase().includes('litigation') || newEncumbrance.toLowerCase().includes('pending');
+      // Explicit status/anomaly/confidence columns (if your file supplies them) override the auto-detected default.
+      const explicitStatusNew = pick(row,['status'],''), explicitAnomalyNew = pick(row,['anomaly'],'');
+      const explicitConfNew = pick(row,['matchconfidence','matchConfidence'],''), explicitHealthNew = pick(row,['datahealth','dataHealth'],'');
+      const finalStatus = explicitStatusNew || (isSevere ? 'review' : 'verified');
+      const finalAnomaly = explicitAnomalyNew || (isSevere ? 'HIGH' : null);
+      const b23n=pick(row,['building_2023'],''), b24n=pick(row,['building_2024'],''), b25n=pick(row,['building_2025'],''), b26n=pick(row,['building_2026'],'');
+      const hasBuildingCols = b23n||b24n||b25n||b26n;
+      const bh = hasBuildingCols
+        ? {2023: b23n!=='' ? parseFloat(b23n) : Math.round(b), 2024: b24n!=='' ? parseFloat(b24n) : Math.round(b), 2025: b25n!=='' ? parseFloat(b25n) : Math.round(b), 2026: b26n!=='' ? parseFloat(b26n) : Math.round(b)}
+        : {2023:Math.round(b), 2024:Math.round(b), 2025:Math.round(b), 2026:Math.round(b)};
+      const np = {
+        id, ward, surveyNo,
+        village: pick(row,['village'],''), taluk: pick(row,['taluk'],''), district: pick(row,['district'],''),
+        owners:{ cadastral: owner||'Unknown', registration: pick(row,['owner_registration'],owner||'Unknown'), municipal: pick(row,['owner_municipal'],owner||'Unknown') },
+        area:{ cadastral: area, registration: area, municipal: area },
+        status: finalStatus, anomaly: finalAnomaly,
+        matchConfidence: explicitConfNew ? parseFloat(explicitConfNew) : 95,
+        dataHealth: explicitHealthNew ? parseFloat(explicitHealthNew) : 92,
+        landUse, classification,
+        address: pick(row,['address'], `Survey No. ${surveyNo}, ${ward}`),
+        permit:'Pending review', encumbrance: newEncumbrance,
+        buildingHistory: bh,
+        gcp:[], utility:[], gnssSession:null,
+        x: 60+(i%6)*95, y: 40+Math.floor(i/6)*65, lng, lat,
+        versions:[{v:1, year:2026, area, owner:owner||'Unknown', building:bh[2026]}]
+      };
+      if(explicitStatusNew){ notes.push(`${id}: status set explicitly from uploaded file → "${explicitStatusNew}"`); if(finalStatus==='review') routedToReview++; }
+      else if(isSevere){ notes.push(`HIGH severity — ${id} auto-routed to Review queue: encumbrance "${newEncumbrance}"`); routedToReview++; }
+      parcels.push(np);
+      created++; touchedIds.add(id);
+    }
+  });
+
+  return {touched: touchedIds.size>0, created, merged, gcpLinked, gnssLinked, utilityLinked, spatialLinked, skipped, routedToReview, touchedIds:[...touchedIds], notes};
+}
+
+/* ---- Schema mapping card: rebuilt from the actual columns of the last uploaded file, ----
+   using the same alias groups the merge engine above recognizes via pick(). ---- */
+const SCHEMA_ALIAS_GROUPS = [
+  {master:'id', aliases:['parcel_id','id','parcelid','mp_id']},
+  {master:'ward', aliases:['ward']},
+  {master:'survey_number', aliases:['surveyno','survey_no','survey number']},
+  {master:'owner_name', aliases:['owner','owner_name','ownername','cadastral_owner']},
+  {master:'owner_registration', aliases:['owner_registration','registration_owner']},
+  {master:'owner_municipal', aliases:['owner_municipal','municipal_owner']},
+  {master:'area_sqm', aliases:['area','area_sqm','area_sq_m','extent']},
+  {master:'village', aliases:['village']},
+  {master:'taluk', aliases:['taluk']},
+  {master:'district', aliases:['district']},
+  {master:'classification', aliases:['classification','land_classification']},
+  {master:'land_use', aliases:['landuse','land_use']},
+  {master:'encumbrance_status', aliases:['encumbrance_status']},
+  {master:'mutation_no', aliases:['mutation_no']},
+  {master:'mutation_date', aliases:['mutation_date']},
+  {master:'mutation_reason', aliases:['mutation_reason']},
+  {master:'lat', aliases:['lat','latitude']},
+  {master:'lng', aliases:['lng','lon','longitude']},
+  {master:'status', aliases:['status']},
+  {master:'anomaly', aliases:['anomaly']},
+  {master:'match_confidence', aliases:['matchconfidence']},
+  {master:'data_health', aliases:['datahealth']},
+  {master:'address', aliases:['address']},
+  {master:'building_2023', aliases:['building_2023']},
+  {master:'building_2024', aliases:['building_2024']},
+  {master:'building_2025', aliases:['building_2025']},
+  {master:'building_2026', aliases:['building_2026']},
+  {master:'gcp_id', aliases:['gcp_id']},
+  {master:'station_id', aliases:['station_id']},
+  {master:'asset_id', aliases:['asset_id']},
+  {master:'adjacent_parcel_ids', aliases:['adjacent_parcel_ids']}
+];
+function collectHeaders(rows){
+  const set = new Set();
+  rows.forEach(r=> Object.keys(r).forEach(k=> set.add(k)));
+  return [...set];
+}
+function buildDynamicSchemaMap(headers){
+  return headers.map(h=>{
+    const hl = h.toLowerCase();
+    const group = SCHEMA_ALIAS_GROUPS.find(g=> g.aliases.includes(hl));
+    if(group) return [h, group.master, group.aliases[0]===hl ? 100 : 93];
+    return [h, '— unmapped (passthrough)', 55];
+  });
+}
+
+function readAndParseFile(file, typeLabel){
+  return new Promise((resolve)=>{
+    const ext = (file.name.split('.').pop()||'').toLowerCase();
+    if(!['csv','json','txt','tsv','geojson'].includes(ext)){ resolve({ok:false, reason:'unsupported-format'}); return; }
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      try{
+        const text = String(reader.result);
+        let rows;
+        if(ext==='json' || ext==='geojson'){
+          const data = JSON.parse(text);
+          if(data && data.type==='FeatureCollection'){
+            rows = flattenGeoJSON(data);
+          } else {
+            rows = Array.isArray(data) ? data : (data.parcels || data.records || []);
+            rows = rows.map(r=>{ const o={}; Object.keys(r).forEach(k=>o[k.toLowerCase()]=r[k]); return o; });
+          }
+        } else {
+          rows = parseCSV(text);
+        }
+        const result = mergeRowsIntoParcels(rows, typeLabel);
+        if(result.touched) resolve({ok:true, ...result, totalRows:rows.length, headers: collectHeaders(rows), fileName: file.name});
+        else resolve({ok:false, reason:'no-schema'});
+      }catch(e){ resolve({ok:false, reason:'parse-error'}); }
+    };
+    reader.onerror = ()=> resolve({ok:false, reason:'read-error'});
+    reader.readAsText(file);
+  });
+}
+function applyUploadedParcels(result){
+  populateParcelSelects();
+  document.getElementById('donutHint').textContent = parcels.length+' parcels';
+  if(result.headers && result.headers.length){
+    schemaMap = buildDynamicSchemaMap(result.headers);
+    const hintEl = document.getElementById('schemaMapHint');
+    if(hintEl) hintEl.textContent = `from ${result.fileName} · ${result.headers.length} columns`;
+  }
+  const search = document.getElementById('parcelSearch');
+  if(search) search.value = '';
+  const flagged = result.touchedIds.map(findParcelById).filter(Boolean);
+  selectedParcelId = (flagged.find(p=>p.status==='review') || flagged.find(p=>p.status==='conflict') || flagged.find(p=>p.anomaly) || flagged[0] || parcels[0] || {}).id || null;
+  refreshAll();
+  if(selectedParcelId) selectParcel(selectedParcelId, 'explorerDetail');
+  // Point the Harmonization page's parcel picker at the just-touched parcel too,
+  // so a drone/ORI upload shows up there immediately, not just in the explorer.
+  const harmSel = document.getElementById('harmParcelSelect');
+  if(harmSel && selectedParcelId && [...harmSel.options].some(o=>o.value===selectedParcelId)){
+    harmSel.value = selectedParcelId;
+  }
+}
+function downloadSampleFile(kind){
+  const csv = kind==='minimal' ? SAMPLE_CSV_MINIMAL : SAMPLE_CSV_FULL;
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = kind==='minimal' ? 'urbanfabric-sample-minimal.csv' : 'urbanfabric-sample-full.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+
+/* ---- Demo parcel generator for Drone / ORI uploads ----------------------------------
+   Imagery carries no owner or survey data, and there's no real computer-vision model in
+   this prototype, so this fabricates a small, believable batch of parcels "delineated"
+   from the upload. Each one is tagged demo:true + derivedFrom so it's never mistaken
+   for a real record. The batch deliberately mixes outcomes (clean, AI-detected change,
+   area conflict, encroachment -> review queue) so every screen has something to show. ---- */
+const DEMO_OWNER_POOL = ['Ramasamy Pillai','Lakshmi Ammal','Karthikeyan Subbiah','Pandiarajan Kumar','Meenakshi Sundaram',
+  'Velusamy Rajan','Annapoorani Thevar','Sivakumar Perumal','Thangaraj Muthiah','Kalaiselvi Nadar','Murugesan Alagar',
+  'Jeyalakshmi Venkat','Balasubramanian Chettiar','Chellamuthu Devar'];
+const DEMO_PARCEL_TEMPLATES = [
+  {kind:'clean',        ward:'Wet Zone',        landUse:'Agricultural',  classification:'Wet',       area:[1800,4200], bldg:0,    permit:'Not applicable (Agricultural)'},
+  {kind:'clean',        ward:'Abadi Zone',      landUse:'Residential',   classification:'Abadi',     area:[350,1400],  bldg:0.18, permit:'On file (2022)'},
+  {kind:'newBuild',     ward:'Abadi Zone',      landUse:'Residential',   classification:'Abadi',     area:[500,1600],  bldg:0.16, permit:'On file (2020)'},
+  {kind:'areaConflict', ward:'Dry Zone',        landUse:'Commercial',    classification:'Dry',       area:[900,2600],  bldg:0.35, permit:'On file (2023)'},
+  {kind:'encroach',     ward:'Government Zone', landUse:'Government',    classification:'Poromboke', area:[1200,3800], bldg:0.05, permit:'Not applicable (Government Land)'}
+];
+function nextDemoParcelSeq(){
+  let max = 0;
+  parcels.forEach(p=>{ const m = /VLG04-(\d+)$/.exec(p.id||''); if(m) max = Math.max(max, parseInt(m[1],10)); });
+  return max + 1;
+}
+function generateDemoParcelsFromImagery(type, fileName){
+  const isOri = type==='ori';
+  const owners = DEMO_OWNER_POOL.slice().sort(()=>Math.random()-0.5);
+  const r1 = v => Math.round(v*10)/10;
+  const rand = (lo,hi) => lo + Math.random()*(hi-lo);
+  let seq = nextDemoParcelSeq();
+  const made = [];
+  DEMO_PARCEL_TEMPLATES.forEach((t,i)=>{
+    const id = 'TN-MDU-VLG04-' + String(seq).padStart(4,'0');
+    const surveyNo = `${seq}/${1+Math.floor(Math.random()*3)}${'ABC'[Math.floor(Math.random()*3)]}`;
+    seq++;
+    const owner = owners[i % owners.length];
+    const area = r1(rand(t.area[0], t.area[1]));
+    const base = Math.round(area * t.bldg);
+    let bh = {2023:base, 2024:base, 2025:base, 2026:base};
+    let status = 'verified', anomaly = null;
+    let ownerMun = owner.toUpperCase(), areaMun = area;
+    let conf = Math.round(rand(94,98)) + (isOri ? 1 : 0);
+    if(t.kind==='newBuild'){
+      bh[2026] = Math.min(Math.round(area*0.9), base + Math.round(base*0.35) + 18);
+      status = 'ai-change'; anomaly = 'LOW'; conf = Math.round(rand(88,91));
+    } else if(t.kind==='areaConflict'){
+      areaMun = r1(area + Math.round(rand(28,70)));
+      status = 'conflict'; conf = Math.round(rand(80,84));
+    } else if(t.kind==='encroach'){
+      const [first, ...rest] = owner.split(' ');
+      ownerMun = `${first[0]}. ${rest.join(' ')}`;
+      bh[2026] = base + Math.round(rand(40,90));
+      status = 'review'; anomaly = 'MEDIUM'; conf = Math.round(rand(82,86));
+    }
+    const c = wardCoords[t.ward] || [78.1210, 9.9250];
+    const np = {
+      id, surveyNo, ward:t.ward, village:'Kalimangalam', taluk:'Madurai South', district:'Madurai',
+      owners:{ cadastral: owner, registration: owner, municipal: ownerMun },
+      area:{ cadastral: area, registration: area, municipal: areaMun },
+      status, anomaly, matchConfidence: conf, dataHealth: Math.min(99, Math.round(rand(90,95)) + (isOri ? 2 : 0)),
+      landUse:t.landUse, classification:t.classification,
+      address:`Survey No. ${surveyNo}, Kalimangalam Village, Madurai South Taluk`,
+      permit:t.permit, encumbrance: t.kind==='encroach' ? 'Not Applicable' : 'Clear',
+      buildingHistory: bh, gcp:[], utility:[], gnssSession:null,
+      x: 60+(i%6)*95, y: 40+Math.floor(i/6)*65,
+      lng: +(c[0] + (Math.random()-0.5)*0.0016).toFixed(5), lat: +(c[1] + (Math.random()-0.5)*0.0016).toFixed(5),
+      versions:[{v:1, year:2026, area, owner, building:bh[2026]}],
+      demo:true, derivedFrom:{ dataset:type, file:fileName }
+    };
+    parcels.push(np);
+    made.push(np);
+  });
+  auditLog.unshift({
+    time: nowTime(), actor:'AI',
+    text: `${isOri ? 'ORI boundary digitisation' : 'Drone parcel delineation'} — ${made.length} demo parcels created`,
+    detail: `${fileName} → ${made.map(p=>p.id.slice(-4)+' ('+p.status+')').join(', ')}`
+  });
+  return made;
+}
+
+/* ---- Simulated GeoAI pass over an uploaded imagery file (drone / ORI / DSM). ----
+   There's no real computer-vision model running client-side, so this doesn't read
+   pixels — but it produces a believable, internally-consistent result (building
+   footprint delta, road segments, data-health bump) and actually writes it back
+   into the live `parcels` array, so the map / explorer / conflicts / anomalies /
+   review queue / master record genuinely change, the same way a CSV upload does. ---- */
+function simulateImageryAnalysis(type, fileName){
+  if(!parcels.length) return {ok:false};
+  const target = (selectedParcelId && findParcelById(selectedParcelId)) || parcels[Math.floor(Math.random()*parcels.length)];
+  if(!target) return {ok:false};
+  target.buildingHistory = target.buildingHistory || {2023:0,2024:0,2025:0,2026:0};
+  const before = target.buildingHistory[2026] || 0;
+  // A building footprint can never exceed the parcel's own land area — cap the
+  // simulated delta so "after" stays within that physical limit.
+  const parcelArea = (target.area && target.area.cadastral) || Infinity;
+  const headroom = Math.max(0, parcelArea - before);
+  const delta = Math.min(8 + Math.floor(Math.random()*55), headroom);
+  const after = before + delta;
+  target.buildingHistory[2026] = after;
+  target.dataHealth = Math.min(99, (target.dataHealth||90) + 2);
+  const bldgPct = before ? Math.round((delta/before)*100) : 100;
+  const major = bldgPct >= 25;
+  const roadSegments = 1 + Math.floor(Math.random()*4);
+  const label = type==='drone' ? 'Drone imagery' : type==='ori' ? 'Orthorectified imagery (ORI)' : 'DSM/DTM dataset';
+  const notes = [];
+  let routedToReview = 0;
+  if(major){
+    // A large, unexplained footprint jump is treated like any other severe
+    // conflict — it's routed straight into the officer Review queue, not just
+    // flagged in the explorer, so it needs a human decision (approve/reject/investigate).
+    target.status = 'review';
+    target.anomaly = 'HIGH';
+    routedToReview = 1;
+    notes.push(`${target.id}: ${label} analysis detected a ${delta} sq.m building footprint change (${before} → ${after} sq.m, ${roadSegments} road segment${roadSegments>1?'s':''} re-traced) with no matching permit update — auto-routed to Review queue.`);
+  } else if(target.status==='verified' || target.status==='ai-change'){
+    target.status = 'ai-change';
+    target.anomaly = 'LOW';
+    notes.push(`${target.id}: ${label} analysis detected a ${delta} sq.m building footprint change (${before} → ${after} sq.m, ${roadSegments} road segment${roadSegments>1?'s':''} re-traced) with no matching permit update — flagged for verification.`);
+  } else {
+    notes.push(`${target.id}: ${label} analysis detected a ${delta} sq.m building footprint change (${before} → ${after} sq.m) and ${roadSegments} road segment${roadSegments>1?'s':''} re-traced.`);
+  }
+  // Drone / ORI uploads also "extract" a batch of demo parcels from the imagery.
+  const demo = (type==='drone' || type==='ori') ? generateDemoParcelsFromImagery(type, fileName) : [];
+  return {
+    ok:true, imagery:true, created:demo.length, merged:1, gcpLinked:0, gnssLinked:0, utilityLinked:0,
+    routedToReview, notes, touchedIds:[target.id, ...demo.map(p=>p.id)], totalRows:1+demo.length, headers:[], fileName,
+    parcelId: target.id, delta, before, after, roadSegments, major,
+    demoParcels: demo.map(p=>({id:p.id, surveyNo:p.surveyNo, ward:p.ward, status:p.status}))
+  };
+}
+
+async function simulateUpload(){
+  if(uploadRunning) return;
+  uploadRunning = true;
+  const btn = document.getElementById('runUploadBtn');
+  btn.disabled = true;
+  const type = document.getElementById('uploadDatasetType').value;
+  const typeLabel = (DATASET_TYPES_BY_ROLE[currentRole]||DATASET_TYPES_BY_ROLE.admin).find(t=>t[0]===type)[1];
+  const file = document.getElementById('uploadFileInput').files[0];
+  const fileName = file?.name || 'uploaded_file';
+  const isImagery = (type==='drone' || type==='ori' || type==='dsm');
+  const stepsEl = document.getElementById('uploadSteps');
+  stepsEl.innerHTML = uploadPipelineSteps.map((s,i)=>`
+    <div class="step" id="ustep${i}"><div class="idx">${i+1}</div><div class="body"><h4>${s.name}</h4><p>${s.desc}</p><div class="result" id="uresult${i}"></div></div></div>`).join('');
+
+  let parseResult = {ok:false};
+  if(!isImagery && file) parseResult = await readAndParseFile(file, typeLabel);
+  if(isImagery && file) parseResult = simulateImageryAnalysis(type, fileName);
+
+  uploadPipelineSteps.forEach((s,i)=>{
+    setTimeout(()=>{
+      document.getElementById('ustep'+i).classList.add('active');
+      setTimeout(()=>{
+        document.getElementById('ustep'+i).classList.remove('active');
+        document.getElementById('ustep'+i).classList.add('done');
+        let r = '';
+        if(i===2) r = `<div style="font-size:11.5px;color:var(--ink-soft);">Detected source CRS — reprojection required.</div>`;
+        if(i===3) r = `<div style="font-size:11.5px;color:var(--ink-soft);">Transformed to <b>WGS84 / EPSG:4326</b>.</div>`;
+        if(i===4){
+          if(parseResult.ok && parseResult.imagery){
+            const p = findParcelById(parseResult.parcelId);
+            const routedNote = parseResult.routedToReview ? ' <b style="color:var(--red)">Auto-routed to Review queue</b> (large, unexplained change).' : (p && p.status==='ai-change' ? ' Flagged as an AI-detected change for verification.' : '');
+            r = `<div style="font-size:11.5px;color:var(--ink-soft);">GeoAI feature extraction complete on <b>${fileName}</b> — building footprint on <b>${parseResult.parcelId}</b>: ${parseResult.before} → <b style="color:var(--purple)">${parseResult.after} sq.m</b> (+${parseResult.delta} sq.m${parseResult.major ? ', major construction' : ''}), ${parseResult.roadSegments} road segment${parseResult.roadSegments>1?'s':''} re-traced.${routedNote} The dashboard, GIS map, explorer, harmonization${parseResult.routedToReview ? ', review queue' : ', anomalies'} and master record below now reflect this.${
+              (parseResult.demoParcels && parseResult.demoParcels.length)
+                ? `<br><b style="color:var(--emerald)">${parseResult.demoParcels.length} new demo parcels</b> extracted from the imagery: ${parseResult.demoParcels.map(d=>`<span class="mono">${d.id.slice(-4)}</span> (${d.status})`).join(', ')} — now on the GIS map and in the explorer.`
+                : ''}</div>`;
+          } else if(parseResult.ok){
+            const parts = [];
+            if(parseResult.created) parts.push(`<b style="color:var(--emerald)">${parseResult.created}</b> new parcel(s) created`);
+            if(parseResult.merged) parts.push(`<b style="color:var(--blue)">${parseResult.merged}</b> merged into existing parcels`);
+            if(parseResult.gcpLinked) parts.push(`<b style="color:var(--cyan)">${parseResult.gcpLinked}</b> ground control point(s) linked`);
+            if(parseResult.gnssLinked) parts.push(`<b style="color:var(--cyan)">${parseResult.gnssLinked}</b> GNSS session(s) linked`);
+            if(parseResult.utilityLinked) parts.push(`<b style="color:var(--purple)">${parseResult.utilityLinked}</b> utility asset(s) linked`);
+            if(parseResult.spatialLinked) parts.push(`<b style="color:var(--amber)">${parseResult.spatialLinked}</b> linked by nearest-parcel location (no parcel_id column)`);
+            if(parseResult.routedToReview) parts.push(`<b style="color:var(--red)">${parseResult.routedToReview}</b> auto-routed to Review queue (severe)`);
+            const conflictNote = parseResult.notes.length ? `<br><span style="color:var(--red)">⚠ ${parseResult.notes.slice(0,2).join(' · ')}</span>` : '';
+            const joinNote = parseResult.spatialLinked && parseResult.spatialLinked===(parseResult.merged+parseResult.gcpLinked+parseResult.gnssLinked+parseResult.utilityLinked)
+              ? 'joined by nearest-parcel location (no parcel_id in file)' : 'joined on parcel_id where present, nearest-parcel location otherwise';
+            r = `<div style="font-size:11.5px;color:var(--ink-soft);">${parts.join(' · ')} from <b>${fileName}</b>, ${joinNote}. The dashboard, GIS map, explorer, conflicts, anomalies${parseResult.routedToReview ? ', review queue' : ''} and master record below now reflect this file.${conflictNote}</div>`;
+          } else {
+            const conf = 88 + Math.floor(Math.random()*10);
+            const note = isImagery ? ' AI/GeoAI feature extraction queued (building footprints, roads).'
+              : (parseResult.reason==='no-schema' ? ' No parcel_id column and no lat/lng coordinates were found to spatially match rows to a parcel, so only source counters were updated — add lat/lng columns (or a parcel_id) and try again.' : '');
+            r = `<div style="font-size:11.5px;color:var(--ink-soft);">Standardized ${Math.floor(80+Math.random()*400)} records into master schema. Confidence score: <b style="color:var(--blue)">${conf}%</b>.${note}</div>`;
+          }
+        }
+        document.getElementById('uresult'+i).innerHTML = r;
+        if(i===uploadPipelineSteps.length-1) finishUpload(type, typeLabel, fileName, isImagery, parseResult);
+      }, 480);
+    }, i*820);
+  });
+}
+function finishUpload(type, typeLabel, fileName, isImagery, parseResult){
+  parseResult = parseResult || {ok:false};
+  const now = nowTime();
+  const today = new Date().toISOString().slice(0,10);
+  const conf = 88 + Math.floor(Math.random()*10);
+  const addedRecords = parseResult.ok ? (parseResult.created+parseResult.merged+parseResult.gcpLinked+parseResult.gnssLinked+parseResult.utilityLinked) : Math.floor(80+Math.random()*400);
+  const srcMatch = sources.find(s=> s.name.toLowerCase().includes(typeLabel.split(' (')[0].toLowerCase().split('/')[0].trim()) );
+  if(srcMatch){ srcMatch.records = parseResult.ok ? Math.max(srcMatch.records, addedRecords) : srcMatch.records + addedRecords; srcMatch.last = today; srcMatch.status='Synced'; }
+  let detail;
+  if(parseResult.ok && parseResult.imagery){
+    detail = `${fileName} · ${typeLabel} analysis on ${parseResult.parcelId}${parseResult.created ? ' · '+parseResult.created+' new demo parcels extracted' : ''} · +${parseResult.delta} sq.m building footprint, ${parseResult.roadSegments} road segment${parseResult.roadSegments>1?'s':''} re-traced${parseResult.routedToReview ? ' · auto-routed to Review queue' : ''} · ${parseResult.notes.join(' · ')}`;
+    auditLog.unshift({time: now, actor:'AI', text: parseResult.routedToReview ? 'GeoAI change detection — routed to Review queue' : 'GeoAI feature extraction complete', detail: parseResult.notes[0]});
+  } else if(parseResult.ok){
+    const bits = [];
+    if(parseResult.created) bits.push(`${parseResult.created} created`);
+    if(parseResult.merged) bits.push(`${parseResult.merged} merged`);
+    if(parseResult.gcpLinked) bits.push(`${parseResult.gcpLinked} GCPs linked`);
+    if(parseResult.gnssLinked) bits.push(`${parseResult.gnssLinked} GNSS sessions linked`);
+    if(parseResult.utilityLinked) bits.push(`${parseResult.utilityLinked} utility assets linked`);
+    if(parseResult.spatialLinked) bits.push(`${parseResult.spatialLinked} linked by location only`);
+    if(parseResult.routedToReview) bits.push(`${parseResult.routedToReview} auto-routed to review`);
+    detail = `${fileName} · ${bits.join(', ')} · ${parseResult.notes.length? parseResult.notes.join(' · ') : 'no conflicts detected'}`;
+    parseResult.notes.forEach(n=> auditLog.unshift({time: now, actor:'AI', text: n.startsWith('HIGH severity') ? 'Severe conflict — auto-routed to Review queue' : 'Conflict detected during upload merge', detail:n}));
+  } else {
+    detail = `${fileName} · ${addedRecords} records · confidence ${conf}% · queued for spatial matching & conflict detection`;
+  }
+  auditLog.unshift({time: now, actor: roleLabels[currentRole]||'Officer', text:`Uploaded ${typeLabel}`, detail});
+  const list = document.getElementById('recentUploads');
+  if(list.querySelector('.empty-hint')) list.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'upload-row';
+  row.innerHTML = `<span>${typeLabel}<br><span class="mono" style="color:var(--ink-mute);font-size:10.5px;">${fileName}</span></span><span class="badge green">${parseResult.ok? addedRecords+' linked':conf+'% conf.'}</span>`;
+  list.prepend(row);
+  document.getElementById('runUploadBtn').disabled = false;
+  uploadRunning = false;
+  if(parseResult.ok){
+    applyUploadedParcels(parseResult);
+  } else {
+    refreshAll();
+  }
+}
+
+function jumpToSearch(){
+  document.querySelector('.navitem[data-page="explorer"]').click();
+  setTimeout(()=>document.getElementById('parcelSearch').focus(), 80);
+}
+
+/* ============================= HELPERS ============================= */
+function statusColor(s){ return s==='verified'?'#0da96e':s==='review'?'#ea9a0a':s==='conflict'?'#ef4444':s==='ai-change'?'#6d28d9':s==='investigating'?'#7c3aed':s==='rejected'?'#8b87a5':'#8b87a5'; }
+function statusBadge(s){
+  const map = {verified:'green', review:'amber', conflict:'red', 'ai-change':'purple', investigating:'purple', rejected:'gray'};
+  const cls = map[s]||'gray';
+  return `<span class="badge ${cls}">${s.replace('-',' ')}</span>`;
+}
+function anomalyBadge(a){
+  if(!a) return '<span class="badge gray">none</span>';
+  const cls = a==='CRITICAL'?'red':a==='HIGH'?'red':a==='MEDIUM'?'amber':'gray';
+  return `<span class="badge ${cls}">${a}</span>`;
+}
+/* ---- Plain-language "why is this parcel in this status" explanation, derived live from the
+   parcel's own data — works identically for demo records and anything merged in from an upload ---- */
+function explainStatus(p){
+  const areaDiffMun = +(Math.abs((p.area.cadastral||0)-(p.area.municipal||0))).toFixed(1);
+  const areaDiffReg = +(Math.abs((p.area.cadastral||0)-(p.area.registration||0))).toFixed(1);
+  const bldgDelta = (p.buildingHistory && p.buildingHistory[2026]!==undefined && p.buildingHistory[2025]!==undefined)
+    ? p.buildingHistory[2026]-p.buildingHistory[2025] : 0;
+  const encLower = (p.encumbrance||'').toLowerCase();
+  const severeEnc = encLower.includes('litigation') || encLower.includes('pending');
+  const jointOwner = (p.owners && p.owners.registration || '').includes('/') || /\bco[- ]?owner|1\/2|joint/i.test(p.owners?.registration||'');
+
+  switch(p.status){
+    case 'conflict':
+      if(severeEnc) return `Encumbrance flag on file: "${p.encumbrance}" — a legal encumbrance was found on the registration record, so this parcel can't be harmonized until it's resolved.`;
+      if(areaDiffMun>0.5) return `Area disagreement across sources: cadastral records show ${p.area.cadastral} sq.m but the municipal source shows ${p.area.municipal} sq.m — a ${areaDiffMun} sq.m difference beyond the auto-match tolerance.`;
+      if(areaDiffReg>0.5) return `Area disagreement across sources: cadastral records show ${p.area.cadastral} sq.m but the registration source shows ${p.area.registration} sq.m — a ${areaDiffReg} sq.m difference beyond the auto-match tolerance.`;
+      return `A source disagreement was detected during harmonization (match confidence ${p.matchConfidence}%) and needs to be resolved before this record can be verified.`;
+    case 'review':
+      if(severeEnc) return `Auto-routed on upload: severe encumbrance detected ("${p.encumbrance}") — high-risk cases are sent straight to the review queue without waiting for a harmonization run.`;
+      if(jointOwner) return `Joint/co-ownership detected (${p.owners.registration}) — the officer needs to confirm the share split before this becomes the master record.`;
+      if(p.anomaly) return `Flagged ${p.anomaly} severity during the harmonization run and routed to a human officer for sign-off before it can update the master record.`;
+      return `Sent for human-in-the-loop review during the harmonization run — an authorized officer needs to approve, reject or investigate before this becomes the master record.`;
+    case 'ai-change':
+      return `Satellite/imagery analysis detected a building footprint change (${p.buildingHistory?.[2025]??'—'} → ${p.buildingHistory?.[2026]??'—'} sq.m${bldgDelta?`, +${bldgDelta} sq.m`:''}) with no matching update on the building-permit record (permit status: "${p.permit}"). Flagged for verification, not proof of an unauthorized change.`;
+    case 'investigating':
+      return `An officer marked this parcel for active investigation after reviewing it in the review queue — a decision is pending further evidence.`;
+    case 'rejected':
+      return `The AI-suggested harmonized record was reviewed and rejected by an officer; the prior verified record has been retained.`;
+    case 'verified':
+    default:
+      if(p.anomaly) return `Sources are close enough to auto-harmonize (match confidence ${p.matchConfidence}%) — a minor ${p.anomaly} variance was noted but falls within tolerance for this zone/classification, so no officer action is required.`;
+      return `Cadastral, registration and municipal sources all agree on owner, area and geometry (match confidence ${p.matchConfidence}%, ${areaDiffMun+areaDiffReg===0?'0 sq.m':'<0.5 sq.m'} variance) — no discrepancies detected.`;
+  }
+}
+function animateNum(el, to, suffix=''){
+  const from = 0; const dur = 700; const start = performance.now();
+  function step(t){
+    const p = Math.min(1,(t-start)/dur);
+    const val = Math.round(from + (to-from)*(1-Math.pow(1-p,3)));
+    el.textContent = val + suffix;
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function drawGauge(svgId, percent, colorVar){
+  const svg = document.getElementById(svgId);
+  const r = 54, cx = 70, cy = 70, circ = 2*Math.PI*r;
+  const offset = circ * (1 - Math.max(0,Math.min(100,percent))/100);
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="rgba(150,180,205,.14)" stroke-width="10"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colorVar}" stroke-width="10" stroke-linecap="round"
+      stroke-dasharray="${circ}" stroke-dashoffset="${circ}" transform="rotate(-90 ${cx} ${cy})">
+      <animate attributeName="stroke-dashoffset" from="${circ}" to="${offset}" dur="1s" fill="freeze" calcMode="spline" keySplines="0.22 1 0.36 1"/>
+    </circle>
+    <text x="${cx}" y="${cy-2}" text-anchor="middle" font-family="Sora" font-size="22" font-weight="700" fill="var(--ink)">${Math.round(percent)}%</text>
+    <text x="${cx}" y="${cy+16}" text-anchor="middle" font-family="IBM Plex Mono" font-size="8" fill="var(--ink-mute)">LIVE</text>`;
+}
+
+/* ============================= RENDER: KPIs + GAUGES ============================= */
+function renderKPIs(){
+  const total = parcels.length;
+  const safeTotal = total || 1;
+  const harmonized = parcels.filter(p=>p.status==='verified').length;
+  const review = parcels.filter(p=>p.status==='review').length;
+  const conflicts = parcels.filter(p=>p.status==='conflict').length;
+  const changes = parcels.filter(p=>p.status==='ai-change'||p.anomaly).length;
+  const anomalies = parcels.filter(p=>p.anomaly).length;
+  animateNum(document.getElementById('kpiTotal'), total);
+  animateNum(document.getElementById('kpiHarmonized'), harmonized);
+  animateNum(document.getElementById('kpiReview'), review);
+  animateNum(document.getElementById('kpiConflicts'), conflicts);
+  animateNum(document.getElementById('kpiChanges'), changes);
+  animateNum(document.getElementById('kpiAnomalies'), anomalies);
+  document.getElementById('kpiHarmonizedTrend').textContent = Math.round(harmonized/safeTotal*100)+'% of tracked parcels';
+  document.getElementById('kpiTotalTrend').textContent = total+' parcels · '+sources.length+' sources';
+  animateNum(document.getElementById('kpiSources'), sources.length);
+  const srcSynced = sources.filter(s=>s.status==='Synced').length;
+  const srcPartial = sources.filter(s=>s.status==='Partial').length;
+  const srcDelayed = sources.filter(s=>s.status==='Delayed').length;
+  document.getElementById('kpiSourcesTrend').textContent = srcSynced+' synced · '+srcPartial+' partial · '+srcDelayed+' delayed';
+  document.getElementById('navConflictBadge').textContent = conflicts;
+  document.getElementById('navReviewBadge').textContent = review;
+  document.getElementById('navAnomalyBadge').textContent = anomalies;
+  document.getElementById('kpiWards').textContent = wards.length;
+  const wardsTrendEl = document.getElementById('kpiWardsTrend');
+  if(wardsTrendEl) wardsTrendEl.textContent = 'Village-wide coverage';
+  const donutHintEl = document.getElementById('donutHint');
+  if(donutHintEl) donutHintEl.textContent = total+' parcels';
+
+  const cityHealth = Math.round(parcels.reduce((s,p)=>s+p.dataHealth,0)/safeTotal);
+  const landTrust = Math.round(parcels.reduce((s,p)=>s+p.matchConfidence,0)/safeTotal);
+  const riskIdx = Math.round(((conflicts + anomalies*1.4) / safeTotal) * 100);
+  drawGauge('gaugeHealth', cityHealth, 'var(--emerald)');
+  drawGauge('gaugeTrust', landTrust, 'var(--cyan)');
+  drawGauge('gaugeRisk', Math.min(100,riskIdx), riskIdx>35?'var(--red)':riskIdx>18?'var(--amber)':'var(--emerald)');
+}
+
+function renderDonut(){
+  const colors = {verified:'#27c96a', review:'#f5a623', conflict:'#f4525a', 'ai-change':'#ab8bfa', investigating:'#28d9ef', rejected:'#57697d'};
+  const counts = {};
+  parcels.forEach(p=> counts[p.status] = (counts[p.status]||0) + 1 );
+  const total = parcels.length;
+  let cum=0;
+  const svg = document.getElementById('donutChart');
+  let paths='';
+  Object.entries(counts).forEach(([k,v])=>{
+    if(v===0) return;
+    const frac = v/total;
+    const startAngle = cum*2*Math.PI; cum += frac;
+    const endAngle = cum*2*Math.PI;
+    const r=90, cx=100, cy=100;
+    const x1=cx+r*Math.sin(startAngle), y1=cy-r*Math.cos(startAngle);
+    const x2=cx+r*Math.sin(endAngle), y2=cy-r*Math.cos(endAngle);
+    const large = frac>0.5?1:0;
+    paths += `<path d="M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z" fill="${colors[k]||'#57697d'}" opacity="0.92"/>`;
+  });
+  paths += `<circle cx="100" cy="100" r="54" fill="var(--panel-solid)"/><text x="100" y="96" text-anchor="middle" font-family="IBM Plex Mono" font-size="20" font-weight="700" fill="var(--ink)">${total}</text><text x="100" y="114" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="var(--ink-mute)">parcels</text>`;
+  svg.innerHTML = paths;
+  document.getElementById('donutLegend').innerHTML = Object.entries(counts).map(([k,v])=>
+    `<div class="li" style="display:flex;align-items:center;gap:6px;"><span class="dot" style="background:${colors[k]||'#57697d'}"></span>${k.replace('-',' ')} (${v})</div>`).join('');
+}
+
+function renderTimelineChart(){
+  const years=[2023,2024,2025,2026];
+  const avgs = years.map(y=> Math.round(parcels.reduce((s,p)=>s+p.buildingHistory[y],0)/parcels.length));
+  const max = Math.max(...avgs)*1.15;
+  const w=320,h=160,pad=28;
+  const pts = years.map((y,i)=>{
+    const x = pad + i*((w-pad*2)/(years.length-1));
+    const yy = h-pad - (avgs[i]/max)*(h-pad*1.4);
+    return [x,yy];
+  });
+  const line = pts.map((p,i)=> (i===0?'M':'L')+p[0]+','+p[1]).join(' ');
+  const area = line + ` L${pts[pts.length-1][0]},${h-pad} L${pts[0][0]},${h-pad} Z`;
+  let dots = pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.2" fill="var(--cyan)"/><text x="${p[0]}" y="${h-8}" text-anchor="middle">${years[i]}</text><text x="${p[0]}" y="${p[1]-8}" text-anchor="middle" fill="var(--ink-soft)" font-weight="600">${avgs[i]}</text>`).join('');
+  document.getElementById('timelineChart').innerHTML = `<path d="${area}" fill="var(--cyan)" opacity="0.10"/><path d="${line}" fill="none" stroke="var(--cyan)" stroke-width="2"/>${dots}`;
+}
+
+function renderWardRisk(){
+  const el = document.getElementById('wardRisk');
+  el.innerHTML = wards.map(w=>{
+    const risk = wardRiskLevel[w];
+    const cls = risk==='High'?'red':risk==='Medium'?'amber':'green';
+    const tileCls = risk==='High'?'risk-high':risk==='Medium'?'risk-medium':'risk-low';
+    const count = parcels.filter(p=>p.ward===w).length;
+    return `<div class="ward-tile ${tileCls}"><div style="display:flex; justify-content:space-between; align-items:center;"><b style="font-size:13px;">${w}</b><span class="badge ${cls}">${risk}</span></div><div style="font-size:11.3px; color:var(--ink-mute); margin-top:6px;">${count} parcels tracked</div></div>`;
+  }).join('');
+}
+
+function renderLiveFeed(){
+  const el = document.getElementById('liveFeed');
+  el.innerHTML = auditLog.slice(0,8).map(a=>`
+    <div class="feed-item">
+      <div class="ftime">${a.time}</div>
+      <div class="fbody"><span class="badge ${a.actor==='AI'?'purple':'green'}" style="margin-right:6px;">${a.actor}</span><b>${a.text}</b><div class="fdetail">${a.detail}</div></div>
+    </div>`).join('');
+}
+
+function renderAIInsights(){
+  const total = parcels.length;
+  const critical = parcels.filter(p=>p.anomaly==='CRITICAL').length;
+  const high = parcels.filter(p=>p.anomaly==='HIGH').length;
+  const lowConf = parcels.filter(p=>p.matchConfidence<85).length;
+  const worstWard = Object.entries(wardRiskLevel).sort((a,b)=>{const o={High:2,Medium:1,Low:0}; return o[b[1]]-o[a[1]];})[0][0];
+  const bestSource = sources.reduce((a,b)=>a.quality>b.quality?a:b);
+  const noPermit = parcels.filter(p=>p.permit==='Not found').length;
+  const insights = [
+    {icon:'▲', color:'red', text:`<b>${critical}</b> parcel(s) show a critical anomaly — building expansion with no matching permit record.`},
+    {icon:'✦', color:'purple', text:`<b>${high+critical}</b> parcels flagged HIGH or CRITICAL risk. Recommend prioritizing these in the review queue.`},
+    {icon:'◈', color:'blue', text:`<b>${lowConf}</b> parcels have match confidence below 85% and may need manual attribute reconciliation.`},
+    {icon:'▣', color:'amber', text:`<b>${worstWard}</b> currently carries the highest composite risk across conflicts and anomalies.`},
+    {icon:'⛁', color:'green', text:`<b>${bestSource.name}</b> has the highest data quality score at ${bestSource.quality}% among connected sources.`},
+    {icon:'◭', color:'purple', text:`<b>${noPermit}</b> parcels show satellite-detected construction with no corresponding building permit on file.`}
+  ];
+  document.getElementById('aiInsights').innerHTML = insights.map(i=>`
+    <div class="insight-row">
+      <div class="iic badge ${i.color}" style="font-size:13px;">${i.icon}</div>
+      <div class="itext">${i.text}</div>
+    </div>`).join('');
+}
+
+/* ============================= GIS MAP (SVG) ============================= */
+function renderGIS(targetId, onClick){
+  const svg = document.getElementById(targetId);
+  let html = '';
+  const wardBoxes = [[0,0,320,190,'Wet Zone'],[320,0,320,190,'Abadi Zone'],[0,190,320,190,'Dry Zone'],[320,190,320,190,'Government Zone']];
+  wardBoxes.forEach(([x,y,w,h,label])=>{
+    html += `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="none" stroke="rgba(49,46,98,0.08)"/><text x="${x+8}" y="${y+16}" fill="#5d5a7a">${label}</text>`;
+  });
+
+  // Group ALL parcels by ward and lay each ward's parcels out in a grid
+  // that always fits inside that ward's box, however many parcels there are.
+  const byWard = {};
+  wards.forEach(w=> byWard[w] = []);
+  parcels.forEach(p=> (byWard[p.ward]||(byWard[p.ward]=[])).push(p));
+
+  wardBoxes.forEach(([bx,by,bw,bh,label])=>{
+    const list = byWard[label] || [];
+    if(!list.length) return;
+    const top = by + 24, innerH = bh - 30, innerW = bw - 14;
+    const cols = Math.max(1, Math.ceil(Math.sqrt(list.length * (innerW/innerH))));
+    const rows = Math.ceil(list.length / cols);
+    const gap = 3;
+    const cellW = Math.max(9, (innerW - gap*(cols-1)) / cols);
+    const cellH = Math.max(9, (innerH - gap*(rows-1)) / rows);
+    const showText = cellW >= 30 && cellH >= 18;
+    list.forEach((p,idx)=>{
+      const col = idx % cols, row = Math.floor(idx / cols);
+      const px = bx + 7 + col*(cellW+gap);
+      const py = top + row*(cellH+gap);
+      const sel = p.id===selectedParcelId;
+      html += `<rect class="parcel-shape ${sel?'selected':''}" data-id="${p.id}" x="${px.toFixed(1)}" y="${py.toFixed(1)}" width="${cellW.toFixed(1)}" height="${cellH.toFixed(1)}" rx="3"
+        fill="${statusColor(p.status)}" fill-opacity="${sel?0.95:0.55}" stroke="${statusColor(p.status)}" stroke-width="${sel?2:1}"><title>${p.id} · ${p.surveyNo}</title></rect>`;
+      if(showText){
+        html += `<text x="${(px+cellW/2).toFixed(1)}" y="${(py+cellH/2+2.5).toFixed(1)}" text-anchor="middle" fill="#04070c" font-size="7" font-weight="700" pointer-events="none">${p.surveyNo}</text>`;
+      }
+    });
+  });
+
+  svg.innerHTML = html;
+  svg.querySelectorAll('.parcel-shape').forEach(shape=>{
+    shape.addEventListener('click', ()=> onClick(shape.dataset.id));
+  });
+}
+
+function selectParcel(id, panelId){
+  selectedParcelId = id;
+  renderGIS('gisMap', (pid)=>selectParcel(pid,'explorerDetail'));
+  renderParcelList(document.getElementById('parcelSearch').value);
+  const p = parcels.find(x=>x.id===id);
+  document.getElementById(panelId).innerHTML = parcelDetailHTML(p);
+}
+
+function parcelDetailHTML(p){
+  const conf = p.matchConfidence;
+  return `
+  <h3>${p.id}</h3>
+  <div class="sub">${p.surveyNo} · ${p.ward} · ${p.landUse}</div>
+  <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">${statusBadge(p.status)}${anomalyBadge(p.anomaly)}<span class="badge gray">match ${conf}%</span></div>
+  <div class="legal-note" style="margin-top:0; margin-bottom:14px;">💡 <b>Why ${p.status.replace('-',' ')}?</b> ${explainStatus(p)}</div>
+
+  <div class="tabbar">
+    <div class="tabbtn active" data-tab="overview">Overview</div>
+    <div class="tabbtn" data-tab="evidence">Evidence</div>
+    <div class="tabbtn" data-tab="timeline">Timeline</div>
+    <div class="tabbtn" data-tab="explain">Explain</div>
+  </div>
+
+  <div class="tabcontent active" data-tab="overview">
+    <div class="kv"><span class="k">Owner (recommended)</span><span class="v">${p.owners.registration}</span></div>
+    <div class="kv"><span class="k">Area (recommended)</span><span class="v">${p.area.cadastral} sq.m</span></div>
+    <div class="kv"><span class="k">Address</span><span class="v" style="font-family:inherit; font-weight:500;">${p.address}</span></div>
+    <div class="kv"><span class="k">Data health</span><span class="v">${p.dataHealth}%</span></div>
+    <div class="kv"><span class="k">Building permit</span><span class="v" style="color:${p.permit==='Not found'?'var(--red)':'var(--emerald)'}">${p.permit}</span></div>
+    <div class="legal-note">Recommended values shown per available source records — not a legal ownership determination.</div>
+    ${p.status==='review'? `<div class="btnrow" style="margin-top:12px;">
+      <button class="btn green" onclick="approveParcel('${p.id}')">Approve</button>
+      <button class="btn red" onclick="rejectParcel('${p.id}')">Reject</button>
+      <button class="btn amber" onclick="investigateParcel('${p.id}')">Investigate</button>
+    </div>` : ''}
+  </div>
+
+  <div class="tabcontent" data-tab="evidence">
+    <div class="evidence-item"><div class="top"><span class="src">CADASTRAL</span><span class="mono">2024-03-01</span></div>Owner: ${p.owners.cadastral} · Area: ${p.area.cadastral} sq.m · Reliability: High</div>
+    <div class="evidence-item"><div class="top"><span class="src">REGISTRATION</span><span class="mono">${p.mutation?p.mutation.date:'2024-03-01'}</span></div>Owner: ${p.owners.registration} · Area: ${p.area.registration} sq.m · Reliability: High</div>
+    <div class="evidence-item"><div class="top"><span class="src">MUNICIPAL</span><span class="mono">2024-03-01</span></div>Owner: ${p.owners.municipal} · Area: ${p.area.municipal} sq.m · Reliability: Medium</div>
+    <div class="evidence-item"><div class="top"><span class="src">SATELLITE</span><span class="mono">2024-02-10</span></div>Building footprint: ${p.buildingHistory[2026]} sq.m (was ${p.buildingHistory[2025]} sq.m) · Reliability: Medium</div>
+  </div>
+
+  <div class="tabcontent" data-tab="timeline">
+    ${[2023,2024,2025,2026].map(y=>`<div class="kv"><span class="k">${y}</span><span class="v">${p.buildingHistory[y]} sq.m built-up</span></div>`).join('')}
+  </div>
+
+  <div class="tabcontent" data-tab="explain">
+    <div class="explain-box"><b>Status: ${p.status.replace('-',' ')}</b> — ${explainStatus(p)}</div>
+    <div class="explain-box" style="margin-top:10px;"><b>${p.id}</b> was matched with confidence <b>${conf}%</b> because:<br>
+    • Survey number matches exactly<br>
+    • Parcel geometries overlap by ~96%<br>
+    • Owner name similarity across sources: ~${Math.max(80,conf-6)}%<br>
+    • Address similarity: ~89%<br>
+    • Area difference: ${Math.abs(p.area.cadastral-p.area.municipal)} sq.m<br><br>
+    Overall confidence <b>${conf}%</b> — ${conf>=90?'above the 90% auto-harmonize threshold.':conf>=70?'in the 70–89% human review band.':'below the 70% threshold — unmatched.'}</div>
+  </div>
+  `;
+}
+
+document.addEventListener('click', e=>{
+  if(e.target.classList.contains('tabbtn')){
+    const container = e.target.closest('.detail-panel');
+    container.querySelectorAll('.tabbtn').forEach(b=>b.classList.remove('active'));
+    container.querySelectorAll('.tabcontent').forEach(c=>c.classList.remove('active'));
+    e.target.classList.add('active');
+    container.querySelector(`.tabcontent[data-tab="${e.target.dataset.tab}"]`).classList.add('active');
+  }
+});
+
+function approveParcel(id){
+  if(currentRole === 'auditor') return;
+  const p = parcels.find(x=>x.id===id);
+  p.status = 'verified';
+  auditLog.unshift({time: nowTime(), actor:'Officer', text:`Approved harmonization for ${id}`, detail:'New master record version created'});
+  p.versions.push({v:p.versions.length+1, year:2026, area:p.area.cadastral, owner:p.owners.registration, building:p.buildingHistory[2026]});
+  refreshAll();
+  selectParcel(id,'explorerDetail');
+}
+function rejectParcel(id){
+  if(currentRole === 'auditor') return;
+  const p = parcels.find(x=>x.id===id);
+  p.status = 'rejected';
+  auditLog.unshift({time: nowTime(), actor:'Officer', text:`Rejected harmonization for ${id}`, detail:'Reverted to prior verified state'});
+  refreshAll();
+  selectParcel(id,'explorerDetail');
+}
+function investigateParcel(id){
+  if(currentRole === 'auditor') return;
+  const p = parcels.find(x=>x.id===id);
+  p.status = 'investigating';
+  auditLog.unshift({time: nowTime(), actor:'Officer', text:`Escalated ${id} for investigation`, detail:'Assigned to Reviewer role'});
+  refreshAll();
+  selectParcel(id,'explorerDetail');
+}
+function nowTime(){ const d=new Date(); return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
+
+/* ============================= PARCEL LIST (left rail) ============================= */
+function renderParcelList(filter=''){
+  const el = document.getElementById('parcelList');
+  const f = filter.toLowerCase();
+  const list = parcels.filter(p=>{
+    const matchesText = !f || [p.id,p.surveyNo,p.owners.cadastral,p.ward].join(' ').toLowerCase().includes(f);
+    const matchesStatus = currentStatusFilter==='all' || p.status===currentStatusFilter;
+    return matchesText && matchesStatus;
+  });
+  el.innerHTML = list.map(p=>`
+    <div class="parcel-row ${p.id===selectedParcelId?'selected':''}" data-status="${p.status}" onclick="selectParcel('${p.id}','explorerDetail')">
+      <div class="pr-top"><span class="pr-id mono">${p.id}</span><span title="${explainStatus(p).replace(/"/g,'&quot;')}">${statusBadge(p.status)}</span></div>
+      <div class="pr-meta">${p.surveyNo} · ${p.ward} · ${p.owners.cadastral}</div>
+      <div class="pr-bottom"><span>${p.matchConfidence}% match</span><span>${p.dataHealth}% health</span></div>
+    </div>`).join('') || '<div class="empty-hint">No parcels match this filter.</div>';
+}
+document.getElementById('parcelSearch').addEventListener('input', e=> renderParcelList(e.target.value));
+document.getElementById('statusFilterRow').addEventListener('click', e=>{
+  if(!e.target.classList.contains('filter-chip')) return;
+  document.querySelectorAll('#statusFilterRow .filter-chip').forEach(c=>c.classList.remove('active'));
+  e.target.classList.add('active');
+  currentStatusFilter = e.target.dataset.status;
+  renderParcelList(document.getElementById('parcelSearch').value);
+});
+
+/* ============================= HARMONIZATION PIPELINE ============================= */
+const harmSteps = [
+  {name:'Schema matching', desc:'Normalizing field names across all connected sources into master schema (intelligent attribute mapping).'},
+  {name:'Geo-referencing & coordinate transformation', desc:'Reprojecting every source (UTM43N, local grid, ITRF) into a common CRS before comparison.'},
+  {name:'Spatial matching', desc:'AI/ML-based comparison of parcel geometries and centroid distance across sources.'},
+  {name:'Topology correction', desc:'Auto-fixing slivers, gaps and self-intersecting boundaries so geometry is topologically valid.'},
+  {name:'Attribute matching', desc:'Scoring owner name, address and area similarity.'},
+  {name:'Temporal analysis', desc:'Change detection across 2023–2026 building footprint history for this parcel.'},
+  {name:'Conflict detection', desc:'Spatial conflict resolution — flagging attribute/geometry values that disagree beyond tolerance.'},
+  {name:'Confidence scoring', desc:'Computing a weighted confidence score for the final integrated record.'}
+];
+function renderHarmSteps(){
+  document.getElementById('harmSteps').innerHTML = harmSteps.map((s,i)=>`
+    <div class="step" id="hstep${i}">
+      <div class="idx">${i+1}</div>
+      <div class="body">
+        <h4>${s.name}</h4><p>${s.desc}</p>
+        <div class="result" id="hresult${i}"></div>
+      </div>
+    </div>`).join('');
+}
+function renderSchemaMap(){
+  const body = document.getElementById('schemaMapBody');
+  if(!body) return;
+  body.innerHTML = schemaMap.map(([src,dst,conf])=>{
+    const cls = conf>=90 ? 'green' : conf>=70 ? 'amber' : 'gray';
+    return `<tr><td class="mono" style="font-size:11px;">${src}</td><td style="color:var(--ink-mute)">→</td><td class="mono">${dst}</td><td><span class="badge ${cls}">${conf}%</span></td></tr>`;
+  }).join('');
+}
+function populateHarmParcelSelect(){
+  const sel = document.getElementById('harmParcelSelect');
+  if(!sel) return;
+  const prevValue = sel.value;
+  sel.innerHTML = parcels.map(p=>`<option value="${p.id}">${p.id} — ${p.surveyNo} (${p.ward})${p.status==='conflict'?' · conflict':p.anomaly?' · anomaly':''}</option>`).join('');
+  if(!parcels.length) return;
+  const stillExists = parcels.some(p=>p.id===prevValue);
+  const preferred = parcels.find(p=>p.status==='conflict') || parcels.find(p=>p.anomaly) || parcels[0];
+  sel.value = stillExists ? prevValue : preferred.id;
+}
+
+let harmRunning = false;
+async function runHarmonization(){
+  if(harmRunning) return;
+  const sel = document.getElementById('harmParcelSelect');
+  const p = parcels.find(x=>x.id===(sel&&sel.value)) || parcels[0];
+  if(!p){
+    document.getElementById('harmOutcome').innerHTML = '<div class="empty-hint">No parcels loaded — upload a dataset first.</div>';
+    return;
+  }
+  harmRunning = true;
+  renderHarmSteps();
+  document.getElementById('harmOutcome').innerHTML = backendConnected
+    ? '<div class="empty-hint">Running on server…</div>'
+    : '<div class="empty-hint">Running…</div>';
+  document.getElementById('runHarmBtn').disabled = true;
+
+  // When a backend is connected, the AI/GeoAI numbers below come from a real server-side
+  // computation (POST /api/pipeline/:id/run) instead of being computed in the browser.
+  const serverResult = await runPipelineOnServer(p.id);
+
+  const areaDiff = serverResult ? serverResult.areaDiff : Math.abs(p.area.cadastral - p.area.municipal);
+  const bldgDelta = serverResult ? serverResult.bldgDelta : (p.buildingHistory[2026] - p.buildingHistory[2025]);
+  const bldgPct = serverResult ? serverResult.bldgPct : (p.buildingHistory[2025] ? Math.round((bldgDelta/p.buildingHistory[2025])*100) : 0);
+  const ownerSim = serverResult ? serverResult.ownerSim : Math.max(75, Math.min(99, p.matchConfidence - 6));
+  const addressSim = serverResult ? serverResult.addressSim : Math.max(72, Math.min(98, p.matchConfidence - 9));
+  const areaSim = serverResult ? serverResult.areaSim : Math.max(70, 100 - areaDiff);
+  const spatialOverlap = serverResult ? serverResult.spatialOverlap : Math.max(70, Math.min(99, p.matchConfidence + 3));
+  const centroidMatch = serverResult ? serverResult.centroidMatch : Math.max(70, Math.min(99, p.matchConfidence + 5));
+
+  harmSteps.forEach((s,i)=>{
+    setTimeout(()=>{
+      document.getElementById('hstep'+i).classList.add('active');
+      setTimeout(()=>{
+        document.getElementById('hstep'+i).classList.remove('active');
+        document.getElementById('hstep'+i).classList.add('done');
+        let resultHTML = '';
+        if(i===1){
+          resultHTML = `<div style="font-size:11.8px; color:var(--ink-soft);">Transformed connected source CRS values into unified <b>WGS84 / EPSG:4326</b> for ${p.id}. Residual alignment error: <b>0.09 m</b>.</div>`;
+        }
+        if(i===2){
+          resultHTML = `<div class="match-bars">
+            <div class="match-row"><span class="lbl">Spatial overlap</span><div class="bar"><div class="f" style="width:${spatialOverlap}%"></div></div><span class="val">${spatialOverlap}%</span></div>
+            <div class="match-row"><span class="lbl">Centroid distance</span><div class="bar"><div class="f" style="width:${centroidMatch}%"></div></div><span class="val">${centroidMatch}%</span></div>
+          </div>`;
+        }
+        if(i===3){
+          const defects = areaDiff>0 ? 2 : 0;
+          resultHTML = defects
+            ? `<div style="font-size:11.8px; color:var(--ink-soft);">Corrected ${defects} geometry defect(s) near this parcel's boundary. Geometry is now topologically valid.</div>`
+            : `<div style="font-size:11.8px; color:var(--ink-soft);">No geometry defects found for ${p.id}. Boundary is already topologically valid.</div>`;
+        }
+        if(i===4){
+          resultHTML = `<div class="match-bars">
+            <div class="match-row"><span class="lbl">Survey no. match</span><div class="bar"><div class="f" style="width:100%"></div></div><span class="val">100%</span></div>
+            <div class="match-row"><span class="lbl">Owner similarity</span><div class="bar"><div class="f" style="width:${ownerSim}%"></div></div><span class="val">${ownerSim}%</span></div>
+            <div class="match-row"><span class="lbl">Address similarity</span><div class="bar"><div class="f" style="width:${addressSim}%"></div></div><span class="val">${addressSim}%</span></div>
+            <div class="match-row"><span class="lbl">Area similarity</span><div class="bar"><div class="f" style="width:${areaSim}%"></div></div><span class="val">${areaSim}%</span></div>
+          </div>`;
+        }
+        if(i===5){
+          resultHTML = bldgDelta>0
+            ? `<div style="font-size:11.8px; color:var(--ink-soft);">Building footprint: ${p.buildingHistory[2025]} → ${p.buildingHistory[2026]} sq.m. <span style="color:var(--purple); font-weight:600;">+${bldgDelta} sq.m (+${bldgPct}%)</span> detected between 2025 and 2026. Classified: <b>${bldgPct>=25?'Major construction':'Minor construction'}</b>.</div>`
+            : `<div style="font-size:11.8px; color:var(--ink-soft);">Building footprint: ${p.buildingHistory[2025]} → ${p.buildingHistory[2026]} sq.m. No significant change detected between 2025 and 2026.</div>`;
+        }
+        if(i===6){
+          resultHTML = areaDiff>0
+            ? `<div style="font-size:11.8px; color:var(--red);">Area conflict: Cadastral ${p.area.cadastral} sq.m vs Municipal ${p.area.municipal} sq.m (${areaDiff} sq.m difference). Suggested value: <b>${p.area.cadastral} sq.m</b> — cadastral and registration sources agree.</div>`
+            : `<div style="font-size:11.8px; color:var(--emerald);">No area conflict: cadastral, registration and municipal sources agree at ${p.area.cadastral} sq.m.</div>`;
+        }
+        if(i===7){
+          resultHTML = `<div style="font-size:11.8px; color:var(--blue);">Overall integration confidence: <b>${p.matchConfidence}%</b> (weighted across geometry, attribute and temporal signals).</div>`;
+        }
+        document.getElementById('hresult'+i).innerHTML = resultHTML;
+        if(i===harmSteps.length-1) finishHarmonization(p, areaDiff, bldgDelta);
+      }, 500);
+    }, i*900);
+  });
+}
+function finishHarmonization(p, areaDiff, bldgDelta){
+  document.getElementById('harmOutcome').innerHTML = `
+    <div class="kv"><span class="k">Match confidence</span><span class="v" style="color:var(--blue)">${p.matchConfidence}%</span></div>
+    <div class="kv"><span class="k">Conflict</span><span class="v" style="color:${areaDiff>0?'var(--red)':'var(--emerald)'}">${areaDiff>0? `Area: ${p.area.cadastral} vs ${p.area.municipal} sq.m` : 'None detected'}</span></div>
+    <div class="kv"><span class="k">Satellite change</span><span class="v" style="color:var(--purple)">${bldgDelta>0? `Building +${bldgDelta} sq.m` : 'No significant change'}</span></div>
+    <div class="kv"><span class="k">Permit evidence</span><span class="v" style="color:${p.permit==='Not found'?'var(--red)':'var(--emerald)'}">${p.permit}</span></div>
+    <div class="kv"><span class="k">Anomaly</span><span class="v">${p.anomaly? p.anomaly+' — expansion without matching permit' : 'None'}</span></div>
+    <div class="legal-note">Recommendation: ${(p.anomaly||areaDiff>0) ? 'route to authorized officer for verification.' : 'no further action required — record is consistent across sources.'} This is a suggested harmonized record, not a legal determination.</div>
+    <div class="btnrow" style="margin-top:12px;"><button class="btn primary" onclick="sendToReview('${p.id}')">Send case to human review</button></div>
+  `;
+  document.getElementById('runHarmBtn').disabled = false;
+  harmRunning = false;
+}
+function sendToReview(id){
+  let p = null;
+  try{
+    p = parcels.find(x=>x.id===id);
+    if(p) p.status = 'review';
+    auditLog.unshift({time: nowTime(), actor: roleLabels[currentRole]||'AI', text:`Case ${id} routed to review queue`, detail: p ? `Reason: harmonization run flagged this record — area conflict and/or unverified building change` : 'Reason: harmonization run flagged this record'});
+  }catch(e){ console.error('sendToReview: could not update parcel/audit log', e); }
+  try{ refreshAll(); }catch(e){ console.error('sendToReview: refreshAll failed', e); }
+  try{ renderReviewQueue(); }catch(e){ console.error('sendToReview: renderReviewQueue retry failed', e); }
+  const reviewNav = document.querySelector('.navitem[data-page="review"]');
+  const canSeeQueue = reviewNav && reviewNav.style.display !== 'none';
+  if(canSeeQueue){
+    reviewNav.click();
+    setTimeout(()=>{
+      try{
+        renderReviewQueue();
+        document.querySelectorAll('#reviewBody tr').forEach(row=>{
+          if(row.textContent.includes(id)){
+            row.style.transition = 'background-color .3s ease';
+            row.style.backgroundColor = 'rgba(91,33,182,.16)';
+            setTimeout(()=>{ row.style.backgroundColor = ''; }, 2200);
+          }
+        });
+      }catch(e){ console.error('sendToReview: highlight step failed', e); }
+    }, 60);
+  } else {
+    const outcomeEl = document.getElementById('harmOutcome');
+    if(outcomeEl){
+      outcomeEl.insertAdjacentHTML('afterbegin', `<div class="legal-note" style="border-color:rgba(13,169,110,.4); background:var(--emerald-soft); color:var(--emerald); margin-bottom:12px;">✓ ${id} has been moved into the review queue. Your current role (${roleLabels[currentRole]||currentRole}) doesn't have access to the Review queue page — sign in as Admin or Revenue Officer to see it.</div>`);
+    }
+  }
+}
+
+/* ============================= CONFLICTS PAGE ============================= */
+function renderConflicts(){
+  const conflictParcels = parcels.filter(p=>p.status!=='review' && (p.status==='conflict' || (p.area.cadastral!==p.area.municipal)));
+  document.getElementById('conflictList').innerHTML = conflictParcels.map(p=>`
+    <div class="card" style="border-left:3px solid var(--red);">
+      <div class="section-title">${p.id} <span class="hint">${p.surveyNo} · ${p.ward}</span></div>
+      <div class="grid g3" style="margin-bottom:10px;">
+        <div class="kv" style="border:1px solid var(--line); border-radius:8px; padding:10px;"><span class="k">Cadastral</span><span class="v">${p.area.cadastral} sq.m</span></div>
+        <div class="kv" style="border:1px solid var(--line); border-radius:8px; padding:10px;"><span class="k">Registration</span><span class="v">${p.area.registration} sq.m</span></div>
+        <div class="kv" style="border:1px solid var(--line); border-radius:8px; padding:10px; ${p.area.municipal!==p.area.cadastral?'background:var(--red-soft);':''}"><span class="k">Municipal</span><span class="v">${p.area.municipal} sq.m</span></div>
+      </div>
+      <div style="font-size:12.3px; color:var(--ink-soft);">Difference: ${Math.abs(p.area.cadastral-p.area.municipal)} sq.m · Suggested harmonized value: <b style="color:var(--ink)">${p.area.cadastral} sq.m</b> (two high-confidence sources agree)</div>
+      <div class="legal-note">💡 Why flagged: ${explainStatus(p)}</div>
+    </div>`).join('') || '<div class="empty-hint">No conflicts detected.</div>';
+}
+
+/* ============================= ANOMALIES PAGE ============================= */
+function renderAnomalies(){
+  const anomalyParcels = parcels.filter(p=>p.anomaly);
+  document.getElementById('anomalyList').innerHTML = anomalyParcels.map(p=>`
+    <div class="card" style="border-left:3px solid var(--purple);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <b class="mono">${p.id}</b>${anomalyBadge(p.anomaly)}
+      </div>
+      <div style="font-size:12.3px; color:var(--ink-soft); margin-bottom:8px;">${explainStatus(p)}</div>
+      <div class="kv"><span class="k">Anomaly confidence</span><span class="v">87%</span></div>
+      <div class="legal-note">Potential anomaly requiring verification — not proof of wrongdoing.</div>
+    </div>`).join('') || '<div class="empty-hint">No anomalies flagged.</div>';
+}
+
+/* ============================= REVIEW QUEUE ============================= */
+function renderReviewQueue(){
+  const q = parcels.filter(p=>p.status==='review');
+  const readOnly = !(currentRole === 'admin' || currentRole === 'revenue_officer');
+  document.getElementById('reviewBody').innerHTML = q.map(p=>`
+    <tr><td class="mono">${p.id}</td>
+    <td style="max-width:320px; font-size:11.8px; color:var(--ink-soft);" title="${explainStatus(p).replace(/"/g,'&quot;')}">${explainStatus(p)}</td>
+    <td class="mono">${p.matchConfidence}%</td>
+    <td>${anomalyBadge(p.anomaly)}</td>
+    <td>${readOnly ? `<span class="badge gray">👁 Read-only · Compliance view</span>` : `<div class="btnrow">
+      <button class="btn green" onclick="approveParcel('${p.id}')">Approve</button>
+      <button class="btn red" onclick="rejectParcel('${p.id}')">Reject</button>
+      <button class="btn amber" onclick="investigateParcel('${p.id}')">Investigate</button>
+    </div>`}</td></tr>`).join('') || '<tr><td colspan="5"><div class="empty-hint">Review queue is empty.</div></td></tr>';
+  const note = document.getElementById('reviewReadOnlyNote');
+  if(note) note.style.display = readOnly ? 'block' : 'none';
+}
+
+/* ============================= MASTER RECORD ============================= */
+function populateParcelSelects(){
+  const opts = parcels.map(p=>`<option value="${p.id}">${p.id} — ${p.surveyNo}</option>`).join('');
+  const sel = document.getElementById('masterParcelSelect');
+  sel.innerHTML = opts;
+  const preferred = parcels.some(p=>p.id==='TN-MDU-VLG04-0114') ? 'TN-MDU-VLG04-0114' : (parcels[0] ? parcels[0].id : '');
+  sel.value = preferred;
+}
+function renderMaster(){
+  const id = document.getElementById('masterParcelSelect').value;
+  const p = parcels.find(x=>x.id===id);
+  if(!p){ document.getElementById('masterContent').innerHTML = '<div class="empty-hint">No parcels loaded.</div>'; return; }
+  document.getElementById('masterContent').innerHTML = `
+    <div class="grid g2">
+      <div class="card">
+        <div class="section-title">Current master value</div>
+        ${statusBadge(p.status)}
+        <div class="legal-note" style="margin-top:10px; margin-bottom:0;">💡 ${explainStatus(p)}</div>
+        <div class="kv" style="margin-top:10px;"><span class="k">Owner</span><span class="v">${p.owners.registration}</span></div>
+        <div class="kv"><span class="k">Survey no.</span><span class="v">${p.surveyNo}</span></div>
+        <div class="kv"><span class="k">Area</span><span class="v">${p.area.cadastral} sq.m</span></div>
+        <div class="kv"><span class="k">Building (2026)</span><span class="v">${p.buildingHistory[2026]} sq.m</span></div>
+        <div class="kv"><span class="k">Match confidence</span><span class="v">${p.matchConfidence}%</span></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Version history</div>
+        ${p.versions.map(v=>`<div class="kv"><span class="k">Version ${v.v} · ${v.year}</span><span class="v">${v.area} sq.m · ${v.owner} · bldg ${v.building} sq.m</span></div>`).join('')}
+      </div>
+    </div>`;
+}
+document.getElementById('masterParcelSelect').addEventListener('change', renderMaster);
+
+/* ============================= AUDIT TRAIL ============================= */
+function renderAudit(){
+  document.getElementById('auditLog').innerHTML = auditLog.map(a=>`
+    <div style="display:flex; gap:16px; padding:12px 0; border-bottom:1px solid var(--line);">
+      <div class="mono" style="width:56px; color:var(--ink-mute); flex-shrink:0;">${a.time}</div>
+      <div class="badge ${a.actor==='AI'?'purple':'green'}" style="flex-shrink:0; height:fit-content;">${a.actor}</div>
+      <div><div style="font-size:12.8px; font-weight:500;">${a.text}</div><div style="font-size:11.3px; color:var(--ink-mute); margin-top:2px;">${a.detail}</div></div>
+    </div>`).join('');
+}
+
+/* ============================= SOURCES ============================= */
+function renderSources(){
+  document.getElementById('sourcesBody').innerHTML = sources.map(s=>`
+    <tr><td>${s.name}</td><td style="color:var(--ink-soft)">${s.type}</td><td class="mono">${s.records.toLocaleString()}</td>
+    <td class="mono">${s.last}</td><td class="mono">${s.crs}</td>
+    <td><span class="badge ${s.quality>93?'green':s.quality>85?'gray':'amber'}">${s.quality}%</span></td>
+    <td><span class="badge ${s.reliability==='High'?'green':'amber'}">${s.reliability}</span></td>
+    <td><span class="badge ${s.status==='Synced'?'green':s.status==='Delayed'?'amber':'gray'}">${s.status}</span></td></tr>`).join('');
+}
+
+/* ============================= DIGITAL TWIN ============================= */
+function setTwin(mode, btn){
+  document.querySelectorAll('.twin-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  document.getElementById('twin2d').style.display = mode==='2d'?'block':'none';
+  document.getElementById('twinIndia3D').style.display = mode==='india3d'?'block':'none';
+  document.getElementById('twinLive').style.display = mode==='live'?'block':'none';
+  if(mode==='live'){
+    initStreetView();
+  }
+  if(mode==='india3d'){
+    initIndia3D();
+  }
+}
+
+/* ============================= INDIA 3D MAP (real, pannable MapLibre 3D map — tap anywhere → Street View) ============================= */
+let indiaMap = null;
+let indiaMapInitialized = false;
+let indiaClickMarker = null;
+
+function initIndia3D(){
+  if(indiaMapInitialized){ setTimeout(()=>{ if(indiaMap) indiaMap.resize(); }, 60); return; }
+  indiaMapInitialized = true;
+  const loadingEl = document.getElementById('indiaMapLoading');
+
+  indiaMap = new maplibregl.Map({
+    container: 'indiaMapStage',
+    style: 'https://tiles.openfreemap.org/styles/liberty',
+    center: [78.9629, 22.5937],   // geographic centre of India
+    zoom: 4.3,
+    pitch: 55,
+    bearing: -12,
+    antialias: true,
+    maxBounds: [[55, -3], [105, 40]]  // keep the whole country reachable, loosely bounded
+  });
+
+  indiaMap.addControl(new maplibregl.NavigationControl({visualizePitch:true}), 'top-right');
+  indiaMap.addControl(new maplibregl.ScaleControl({unit:'metric'}), 'bottom-right');
+
+  indiaMap.on('load', ()=>{
+    try{
+      // Real elevation → genuine 3D terrain across the country, not a flat plane.
+      indiaMap.addSource('india-terrain-dem', {
+        type: 'raster-dem',
+        tiles: ['https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png'],
+        tileSize: 256,
+        encoding: 'terrarium',
+        maxzoom: 15
+      });
+      indiaMap.setTerrain({ source: 'india-terrain-dem', exaggeration: 1.4 });
+
+      // 3D building extrusions — appear automatically once zoomed into any city/street.
+      const style = indiaMap.getStyle();
+      const buildingSourceLayer = style.layers.find(l => l['source-layer'] === 'building');
+      const labelLayer = style.layers.find(l => l.type === 'symbol' && l.layout && l.layout['text-field']);
+      if(buildingSourceLayer){
+        indiaMap.addLayer({
+          id: '3d-buildings',
+          type: 'fill-extrusion',
+          source: buildingSourceLayer.source,
+          'source-layer': 'building',
+          minzoom: 13,
+          paint: {
+            'fill-extrusion-color': '#8b93c9',
+            'fill-extrusion-height': ['coalesce', ['get','render_height'], 8],
+            'fill-extrusion-base': ['coalesce', ['get','render_min_height'], 0],
+            'fill-extrusion-opacity': 0.82
+          }
+        }, labelLayer ? labelLayer.id : undefined);
+      }
+    }catch(err){ /* terrain/3D-buildings are progressive enhancement — map still works without them */ }
+    if(loadingEl) loadingEl.classList.add('hide');
+  });
+
+  indiaMap.on('error', ()=>{ if(loadingEl) loadingEl.classList.add('hide'); });
+
+  // The core interaction: touch/click anywhere on India → jump into Street View there.
+  indiaMap.on('click', (e)=> handleIndiaMapTap(e.lngLat.lat, e.lngLat.lng));
+
+  indiaMap.on('load', ()=>{ setTimeout(()=>{ if(loadingEl) loadingEl.classList.add('hide'); }, 4000); });
+}
+
+async function handleIndiaMapTap(lat, lng){
+  if(indiaClickMarker) indiaClickMarker.remove();
+  indiaClickMarker = new maplibregl.Marker({color:'#5b21b6'}).setLngLat([lng, lat]).addTo(indiaMap);
+
+  const locEl = document.getElementById('indiaMapLoc');
+  if(locEl){ locEl.classList.add('show'); locEl.textContent = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} — resolving place name…`; }
+
+  indiaMap.flyTo({ center:[lng, lat], zoom: Math.max(indiaMap.getZoom(), 15), pitch: 60, speed: 0.9 });
+
+  let label = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  try{
+    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1`, {headers:{'Accept':'application/json'}});
+    if(res.ok){
+      const data = await res.json();
+      if(data && data.display_name) label = data.display_name;
+    }
+  }catch(err){ /* offline — fall back to raw coordinates, still a valid Street View lookup */ }
+
+  if(locEl){ locEl.textContent = `📍 ${label}`; }
+
+  // Switch into the Live Street View tab and load the real panorama at the tapped point.
+  const liveBtn = Array.from(document.querySelectorAll('.twin-btn')).find(b => b.textContent.trim() === 'Live Street View');
+  setTwin('live', liveBtn);
+  loadStreetViewAt(lat, lng, label);
+}
+
+/* ============================= LIVE STREET VIEW (real, navigable Google Street View — any street in India) ============================= */
+let streetViewLoadTimer = null;
+let streetViewInitialized = false;
+const streetViewQuickCities = [
+  {name:'Madurai', lat:9.9252, lng:78.1198},
+  {name:'Chennai', lat:13.0827, lng:80.2707},
+  {name:'Bengaluru', lat:12.9716, lng:77.5946},
+  {name:'Mumbai', lat:19.0760, lng:72.8777},
+  {name:'Delhi', lat:28.6139, lng:77.2090},
+  {name:'Hyderabad', lat:17.3850, lng:78.4867},
+  {name:'Kolkata', lat:22.5726, lng:88.3639},
+];
+function initStreetView(){
+  renderStreetViewQuickCities();
+  if(!streetViewInitialized){
+    streetViewInitialized = true;
+    // Default landing location: Madurai, Tamil Nadu.
+    loadStreetViewAt(9.9252, 78.1198, 'Madurai, Tamil Nadu');
+  }
+}
+function renderStreetViewQuickCities(){
+  const el = document.getElementById('streetViewQuickCities');
+  if(!el || el.dataset.built) return;
+  el.dataset.built = '1';
+  el.innerHTML = streetViewQuickCities.map((c,i)=>
+    `<span class="filter-chip${i===0?' active':''}" data-city="${c.name}" onclick="selectStreetViewCity('${c.name}', this)">${c.name}</span>`
+  ).join('');
+}
+function selectStreetViewCity(name, chipEl){
+  const c = streetViewQuickCities.find(x=>x.name===name);
+  if(!c) return;
+  document.querySelectorAll('#streetViewQuickCities .filter-chip').forEach(ch=>ch.classList.remove('active'));
+  if(chipEl) chipEl.classList.add('active');
+  const search = document.getElementById('streetViewSearch');
+  if(search) search.value = '';
+  loadStreetViewAt(c.lat, c.lng, c.name+', India');
+}
+function goToStreetViewSearch(){
+  const input = document.getElementById('streetViewSearch');
+  const q = input ? input.value.trim() : '';
+  if(!q) return;
+  document.querySelectorAll('#streetViewQuickCities .filter-chip').forEach(ch=>ch.classList.remove('active'));
+  // Free-text search across all of India (or anywhere) — Google resolves the nearest panorama.
+  loadStreetViewByQuery(q + ', India');
+}
+function loadStreetViewAt(lat, lng, label){
+  const statusEl = document.getElementById('liveMapStatus');
+  const frame = document.getElementById('streetViewFrame');
+  if(!frame) return;
+  statusEl.style.display = 'flex';
+  statusEl.innerHTML = '<div class="spin"></div>Loading live Street View imagery…';
+  // Google's public Street View embed (no API key) — real, live, navigable panorama.
+  const svUrl = `https://maps.google.com/maps?layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0&output=svembed`;
+  frame.src = svUrl;
+  frame.onload = ()=>{ statusEl.style.display = 'none'; };
+  updateStreetViewMeta(label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`, `https://www.google.com/maps?layer=c&cbll=${lat},${lng}`);
+  armStreetViewTimeout();
+}
+function loadStreetViewByQuery(q){
+  const statusEl = document.getElementById('liveMapStatus');
+  const frame = document.getElementById('streetViewFrame');
+  if(!frame) return;
+  statusEl.style.display = 'flex';
+  statusEl.innerHTML = '<div class="spin"></div>Loading live Street View imagery…';
+  const svUrl = `https://maps.google.com/maps?layer=c&q=${encodeURIComponent(q)}&output=svembed`;
+  frame.src = svUrl;
+  frame.onload = ()=>{ statusEl.style.display = 'none'; };
+  updateStreetViewMeta(q, `https://www.google.com/maps?q=${encodeURIComponent(q)}`);
+  armStreetViewTimeout();
+}
+function armStreetViewTimeout(){
+  const statusEl = document.getElementById('liveMapStatus');
+  clearTimeout(streetViewLoadTimer);
+  streetViewLoadTimer = setTimeout(()=>{
+    if(statusEl.style.display !== 'none'){
+      statusEl.innerHTML = 'Could not confirm the live Street View panorama loaded (no internet access in this environment, or no coverage at this exact point). Open this file in a browser with internet access — the frame below is a real, live request to Google.';
+    }
+  }, 6000);
+}
+function updateStreetViewMeta(label, mapsUrl){
+  const locEl = document.getElementById('streetViewCurrentLoc');
+  const linkEl = document.getElementById('streetViewOpenExternal');
+  if(locEl) locEl.textContent = '📍 '+label;
+  if(linkEl) linkEl.href = mapsUrl;
+}
+function showTwinDetail(id){
+  const p = parcels.find(x=>x.id===id);
+  selectedParcelId = id;
+  if(document.getElementById('twinLive').style.display !== 'none'){
+    document.querySelectorAll('#streetViewQuickCities .filter-chip').forEach(ch=>ch.classList.remove('active'));
+    const search = document.getElementById('streetViewSearch');
+    if(search) search.value = '';
+    loadStreetViewAt(p.lat, p.lng, p.id+' · '+p.address);
+  }
+  document.getElementById('twinDetail').innerHTML = `
+    <h3>${p.id}</h3><div class="sub">${p.surveyNo} · ${p.ward}</div>
+    <div class="kv"><span class="k">Estimated height</span><span class="v">${Math.round(p.buildingHistory[2026]/20)} floors (est.)</span></div>
+    <div class="kv"><span class="k">Footprint (2026)</span><span class="v">${p.buildingHistory[2026]} sq.m</span></div>
+    <div class="kv"><span class="k">Estimated construction year</span><span class="v">~2019 (est.)</span></div>
+    <div class="kv"><span class="k">Permit status</span><span class="v" style="color:${p.permit==='Not found'?'var(--red)':'var(--emerald)'}">${p.permit}</span></div>
+    <div class="kv"><span class="k">Change history</span><span class="v">${p.buildingHistory[2023]} → ${p.buildingHistory[2026]} sq.m</span></div>
+    <div class="legal-note">Height, floors and construction year are satellite/AI-derived estimates, not surveyed values.</div>`;
+}
+
+/* ============================= REFRESH ALL ============================= */
+function refreshAll(){
+  renderKPIs(); renderDonut(); renderTimelineChart(); renderWardRisk(); renderLiveFeed(); renderAIInsights();
+  renderParcelList(document.getElementById('parcelSearch').value);
+  renderGIS('gisMap', (pid)=>selectParcel(pid,'explorerDetail'));
+  renderGIS('gisMapTwin', (pid)=>showTwinDetail(pid));
+  renderConflicts(); renderAnomalies(); renderReviewQueue();
+  renderMaster(); renderAudit(); renderSources();
+  renderSchemaMap();
+  populateHarmParcelSelect();
+  syncState();
+}
+
+/* ============================= BACKEND SYNC ============================= */
+// If this file is opened directly (file://) there's no server to talk to, and the app
+// runs exactly as before — a self-contained offline demo with in-memory sample data.
+// If it's served by the included Python backend (python app.py in /backend), it detects that,
+// pulls real persisted state, and every action below (approve/reject/investigate, review
+// routing, uploads) is saved to disk via the server instead of resetting on reload.
+const API_BASE = (location.protocol === 'file:') ? null : '/api';
+let backendConnected = false;
+let syncTimer = null;
+
+async function initBackend(){
+  if(!API_BASE){ updateBackendBadge(); return; }
+  try{
+    const res = await fetch(API_BASE + '/state', {cache:'no-store'});
+    if(!res.ok) throw new Error('backend responded with ' + res.status);
+    const data = await res.json();
+    if(Array.isArray(data.parcels) && data.parcels.length){ parcels.length = 0; data.parcels.forEach(p=>parcels.push(p)); }
+    if(Array.isArray(data.auditLog)){ auditLog.length = 0; data.auditLog.forEach(a=>auditLog.push(a)); }
+    if(Array.isArray(data.sources) && data.sources.length){ sources.length = 0; data.sources.forEach(s=>sources.push(s)); }
+    backendConnected = true;
+  }catch(e){
+    backendConnected = false;
+  }
+  updateBackendBadge();
+  populateParcelSelects();
+  populateHarmParcelSelect();
+  refreshAll();
+}
+function updateBackendBadge(){
+  const el = document.getElementById('backendBadge');
+  if(!el) return;
+  if(backendConnected){
+    el.innerHTML = `<span class="dot live" style="background:var(--emerald);color:var(--emerald);"></span>Backend connected — changes are saved`;
+  } else {
+    el.innerHTML = `<span class="dot" style="background:var(--ink-mute);"></span>Offline mode — changes reset on reload`;
+  }
+}
+function syncState(){
+  if(!backendConnected) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(()=>{
+    fetch(API_BASE + '/state', {
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({parcels, auditLog, sources})
+    }).catch(()=>{ /* stay in whatever state we had; next mutation will retry */ });
+  }, 300);
+}
+async function runPipelineOnServer(parcelId){
+  if(!backendConnected) return null;
+  try{
+    const res = await fetch(`${API_BASE}/pipeline/${encodeURIComponent(parcelId)}/run`, {method:'POST'});
+    if(!res.ok) throw new Error('pipeline run failed: ' + res.status);
+    return await res.json();
+  }catch(e){ return null; }
+}
+
+/* ============================= CLOCK ============================= */
+function tickClock(){
+  const d = new Date();
+  document.getElementById('clockChip').textContent = d.toLocaleTimeString('en-GB');
+}
+setInterval(tickClock, 1000);
+
+/* ============================= INIT ============================= */
+populateParcelSelects();
+renderHarmSteps();
+refreshAll();
+tickClock();
+initBackend();
+
+/* ============================= LOGIN SCREEN LOGIC ============================= */
+function setLoginMode(mode){
+  document.getElementById('paneSignin').style.display = mode==='signin' ? 'block':'none';
+  document.getElementById('paneRequest').style.display = mode==='request' ? 'block':'none';
+  document.getElementById('paneReset').style.display = mode==='reset' ? 'block':'none';
+}
+function togglePass(){
+  const p = document.getElementById('loginPassword');
+  const btn = document.querySelector('.toggle-vis');
+  const isPwd = p.type === 'password';
+  p.type = isPwd ? 'text' : 'password';
+  btn.querySelector('.eye-on').style.display = isPwd ? 'none' : '';
+  btn.querySelector('.eye-off').style.display = isPwd ? '' : 'none';
+}
+function handleSignin(e){
+  e.preventDefault();
+  const email = document.getElementById('loginEmail').value.trim() || 'user@municipality.gov.in';
+  const role = document.getElementById('loginRole').value;
+  const btn = document.getElementById('signinBtn');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  btn.querySelector('.label').textContent = 'Signing in…';
+  setTimeout(()=>{ runBootSequence(email, role); }, 450);
+  return false;
+}
+function handleRequest(e){
+  e.preventDefault();
+  const alertBox = document.getElementById('requestAlert');
+  alertBox.className = 'alert success show';
+  alertBox.textContent = 'Request submitted. A workspace administrator will review it shortly.';
+  document.getElementById('requestForm').reset();
+  return false;
+}
+function handleReset(e){
+  e.preventDefault();
+  const alertBox = document.getElementById('resetAlert');
+  alertBox.className = 'alert success show';
+  alertBox.textContent = 'If that email matches a workspace account, a reset link is on its way.';
+  document.getElementById('resetForm').reset();
+  return false;
+}
+const bootLines = ['Authenticating workspace…','Connecting to 8 data sources…','Loading parcel intelligence layer…','Calibrating risk models…','Rendering command center…'];
+function runBootSequence(email, role){
+  document.getElementById('loginScreen').style.display = 'none';
+  const overlay = document.getElementById('bootOverlay');
+  overlay.style.display = 'flex';
+  const textEl = document.getElementById('bootText');
+  const fillEl = document.getElementById('bootFill');
+  let i = 0;
+  function step(){
+    textEl.textContent = bootLines[i];
+    fillEl.style.width = Math.round(((i+1)/bootLines.length)*100)+'%';
+    i++;
+    if(i<bootLines.length){ setTimeout(step, 420); }
+    else { setTimeout(()=>{ overlay.classList.add('hide'); enterApp(email, role); setTimeout(()=>overlay.style.display='none',500); }, 420); }
+  }
+  step();
+}
+function enterApp(email, role){
+  const appRoot = document.getElementById('appRoot');
+  appRoot.classList.add('revealed');
+  document.getElementById('rolePillText').textContent = `${(roleLabels[role]||role).toUpperCase()}`;
+  currentRole = role;
+  applyRoleAccess(role);
+  renderReviewQueue();
+}
+function signOut(){
+  location.reload();
+}
+</script>
+
+</body>
+</html>

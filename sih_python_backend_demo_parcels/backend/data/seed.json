@@ -1,0 +1,496 @@
+{
+  "parcels": [
+    {
+      "id": "TN-MDU-VLG04-0112",
+      "surveyNo": "112/2A",
+      "ward": "Wet Zone",
+      "village": "Kalimangalam",
+      "taluk": "Madurai South",
+      "district": "Madurai",
+      "owners": {
+        "cadastral": "Muthu Krishnan",
+        "registration": "Muthu Krishnan",
+        "municipal": "M. Krishnan"
+      },
+      "area": {
+        "cadastral": 2450.6,
+        "registration": 2450.6,
+        "municipal": 2450.6
+      },
+      "status": "verified",
+      "anomaly": null,
+      "matchConfidence": 98,
+      "dataHealth": 97,
+      "landUse": "Agricultural",
+      "classification": "Wet",
+      "address": "Survey No. 112/2A, Kalimangalam Village, Madurai South Taluk",
+      "permit": "Not applicable (Agricultural)",
+      "encumbrance": "Clear",
+      "mutation": {
+        "no": "MUT-2019-0345",
+        "date": "2019-06-14",
+        "reason": "Inheritance"
+      },
+      "buildingHistory": {
+        "2023": 0,
+        "2024": 0,
+        "2025": 0,
+        "2026": 0
+      },
+      "gcp": [
+        "GCP-001",
+        "GCP-002"
+      ],
+      "gnssSession": "Rover-Team-A-Session1",
+      "utility": [
+        "PWR-LINE-0041",
+        "WTR-PIPE-0077",
+        "SWR-LINE-0033"
+      ],
+      "x": 60,
+      "y": 40,
+      "lng": 78.1198,
+      "lat": 9.9252,
+      "versions": [
+        {
+          "v": 1,
+          "year": 2024,
+          "area": 2450.6,
+          "owner": "Muthu Krishnan",
+          "building": 0
+        },
+        {
+          "v": 2,
+          "year": 2025,
+          "area": 2450.6,
+          "owner": "Muthu Krishnan",
+          "building": 0
+        },
+        {
+          "v": 3,
+          "year": 2026,
+          "area": 2450.6,
+          "owner": "Muthu Krishnan",
+          "building": 0
+        }
+      ]
+    },
+    {
+      "id": "TN-MDU-VLG04-0113",
+      "surveyNo": "113/1",
+      "ward": "Abadi Zone",
+      "village": "Kalimangalam",
+      "taluk": "Madurai South",
+      "district": "Madurai",
+      "owners": {
+        "cadastral": "Selvi Meenakshi / Kannan Palanisamy",
+        "registration": "Selvi Meenakshi (1/2), Kannan Palanisamy (1/2)",
+        "municipal": "S. Meenakshi & K. Palanisamy"
+      },
+      "area": {
+        "cadastral": 1875.2,
+        "registration": 1875.2,
+        "municipal": 1875.2
+      },
+      "status": "review",
+      "anomaly": "MEDIUM",
+      "matchConfidence": 84,
+      "dataHealth": 91,
+      "landUse": "Residential",
+      "classification": "Abadi",
+      "address": "Survey No. 113/1, Kalimangalam Village, Madurai South Taluk",
+      "permit": "On file (2020)",
+      "encumbrance": "Clear",
+      "mutation": {
+        "no": "MUT-2020-0122",
+        "date": "2020-02-27",
+        "reason": "Sale Deed"
+      },
+      "buildingHistory": {
+        "2023": 140,
+        "2024": 145,
+        "2025": 145,
+        "2026": 150
+      },
+      "gcp": [
+        "GCP-003"
+      ],
+      "gnssSession": "Rover-Team-A-Session2",
+      "utility": [
+        "PWR-LINE-0041",
+        "PWR-POLE-0102",
+        "WTR-PIPE-0077",
+        "WTR-VALVE-0015"
+      ],
+      "x": 155,
+      "y": 40,
+      "lng": 78.1206,
+      "lat": 9.9251,
+      "versions": [
+        {
+          "v": 1,
+          "year": 2024,
+          "area": 1875.2,
+          "owner": "Selvi Meenakshi / Kannan Palanisamy",
+          "building": 140
+        },
+        {
+          "v": 2,
+          "year": 2025,
+          "area": 1875.2,
+          "owner": "Selvi Meenakshi / Kannan Palanisamy",
+          "building": 145
+        },
+        {
+          "v": 3,
+          "year": 2026,
+          "area": 1875.2,
+          "owner": "Selvi Meenakshi / Kannan Palanisamy",
+          "building": 150
+        }
+      ]
+    },
+    {
+      "id": "TN-MDU-VLG04-0114",
+      "surveyNo": "114/3B",
+      "ward": "Dry Zone",
+      "village": "Kalimangalam",
+      "taluk": "Madurai South",
+      "district": "Madurai",
+      "owners": {
+        "cadastral": "Sri Andal Trust",
+        "registration": "Sri Andal Trust",
+        "municipal": "Sri Andal Trust"
+      },
+      "area": {
+        "cadastral": 5620.4,
+        "registration": 5620.4,
+        "municipal": 5620.4
+      },
+      "status": "conflict",
+      "anomaly": "HIGH",
+      "matchConfidence": 79,
+      "dataHealth": 85,
+      "landUse": "Agricultural",
+      "classification": "Dry",
+      "address": "Survey No. 114/3B, Kalimangalam Village, Madurai South Taluk",
+      "permit": "Not found",
+      "encumbrance": "Litigation Pending",
+      "mutation": {
+        "no": "MUT-2015-0088",
+        "date": "2015-11-03",
+        "reason": "Trust Registration"
+      },
+      "buildingHistory": {
+        "2023": 0,
+        "2024": 0,
+        "2025": 0,
+        "2026": 0
+      },
+      "gcp": [
+        "GCP-004",
+        "GCP-005"
+      ],
+      "gnssSession": "Rover-Team-B-Session1",
+      "utility": [
+        "WTR-PIPE-0077",
+        "SWR-LINE-0033"
+      ],
+      "x": 250,
+      "y": 40,
+      "lng": 78.1213,
+      "lat": 9.925,
+      "versions": [
+        {
+          "v": 1,
+          "year": 2024,
+          "area": 5620.4,
+          "owner": "Sri Andal Trust",
+          "building": 0
+        },
+        {
+          "v": 2,
+          "year": 2025,
+          "area": 5620.4,
+          "owner": "Sri Andal Trust",
+          "building": 0
+        },
+        {
+          "v": 3,
+          "year": 2026,
+          "area": 5620.4,
+          "owner": "Sri Andal Trust",
+          "building": 0
+        }
+      ]
+    },
+    {
+      "id": "TN-MDU-VLG04-0115",
+      "surveyNo": "115/1A",
+      "ward": "Abadi Zone",
+      "village": "Kalimangalam",
+      "taluk": "Madurai South",
+      "district": "Madurai",
+      "owners": {
+        "cadastral": "Rajendran M",
+        "registration": "Rajendran M",
+        "municipal": "RAJENDRAN M"
+      },
+      "area": {
+        "cadastral": 980.1,
+        "registration": 980.1,
+        "municipal": 1020
+      },
+      "status": "ai-change",
+      "anomaly": "LOW",
+      "matchConfidence": 90,
+      "dataHealth": 93,
+      "landUse": "Commercial",
+      "classification": "Abadi",
+      "address": "Survey No. 115/1A, Kalimangalam Village, Madurai South Taluk",
+      "permit": "On file (2022)",
+      "encumbrance": "Clear",
+      "mutation": {
+        "no": "MUT-2022-0501",
+        "date": "2022-08-19",
+        "reason": "Sale Deed"
+      },
+      "buildingHistory": {
+        "2023": 180,
+        "2024": 190,
+        "2025": 195,
+        "2026": 230
+      },
+      "gcp": [
+        "GCP-006"
+      ],
+      "gnssSession": "Rover-Team-B-Session2",
+      "utility": [
+        "PWR-LINE-0041",
+        "SWR-LINE-0033"
+      ],
+      "x": 345,
+      "y": 40,
+      "lng": 78.1224,
+      "lat": 9.9249,
+      "versions": [
+        {
+          "v": 1,
+          "year": 2024,
+          "area": 980.1,
+          "owner": "Rajendran M",
+          "building": 180
+        },
+        {
+          "v": 2,
+          "year": 2025,
+          "area": 980.1,
+          "owner": "Rajendran M",
+          "building": 195
+        },
+        {
+          "v": 3,
+          "year": 2026,
+          "area": 1020,
+          "owner": "Rajendran M",
+          "building": 230
+        }
+      ]
+    },
+    {
+      "id": "TN-MDU-VLG04-0116",
+      "surveyNo": "116/2",
+      "ward": "Government Zone",
+      "village": "Kalimangalam",
+      "taluk": "Madurai South",
+      "district": "Madurai",
+      "owners": {
+        "cadastral": "Government of Tamil Nadu",
+        "registration": "Government of Tamil Nadu",
+        "municipal": "Government of Tamil Nadu"
+      },
+      "area": {
+        "cadastral": 3120.9,
+        "registration": 3120.9,
+        "municipal": 3120.9
+      },
+      "status": "verified",
+      "anomaly": "MEDIUM",
+      "matchConfidence": 96,
+      "dataHealth": 94,
+      "landUse": "Government",
+      "classification": "Poromboke",
+      "address": "Survey No. 116/2, Kalimangalam Village, Madurai South Taluk",
+      "permit": "Not applicable (Government Land)",
+      "encumbrance": "Not Applicable",
+      "mutation": {
+        "no": "N/A",
+        "date": "N/A",
+        "reason": "Original Grant"
+      },
+      "buildingHistory": {
+        "2023": 0,
+        "2024": 0,
+        "2025": 0,
+        "2026": 0
+      },
+      "gcp": [
+        "GCP-007",
+        "GCP-008"
+      ],
+      "gnssSession": "Rover-Team-A-Session3",
+      "utility": [],
+      "x": 440,
+      "y": 40,
+      "lng": 78.123,
+      "lat": 9.9248,
+      "versions": [
+        {
+          "v": 1,
+          "year": 2024,
+          "area": 3120.9,
+          "owner": "Government of Tamil Nadu",
+          "building": 0
+        },
+        {
+          "v": 2,
+          "year": 2025,
+          "area": 3120.9,
+          "owner": "Government of Tamil Nadu",
+          "building": 0
+        },
+        {
+          "v": 3,
+          "year": 2026,
+          "area": 3120.9,
+          "owner": "Government of Tamil Nadu",
+          "building": 0
+        }
+      ]
+    }
+  ],
+  "auditLog": [
+    {
+      "time": "09:10",
+      "actor": "AI",
+      "text": "Matched Revenue record RR-2024-0113-A/B → TN-MDU-VLG04-0113",
+      "detail": "Joint ownership detected — confidence: 84%"
+    },
+    {
+      "time": "09:12",
+      "actor": "AI",
+      "text": "Detected ownership-share conflict on TN-MDU-VLG04-0113",
+      "detail": "Two co-owners at 1/2 share each — flagged for revenue officer review"
+    },
+    {
+      "time": "09:20",
+      "actor": "AI",
+      "text": "Encumbrance flag ingested for TN-MDU-VLG04-0114",
+      "detail": "Revenue record RR-2024-0114-A marked \"Litigation Pending\" — HIGH anomaly raised"
+    },
+    {
+      "time": "09:26",
+      "actor": "AI",
+      "text": "Satellite change detected on TN-MDU-VLG04-0115",
+      "detail": "Commercial building footprint +35 sq.m (2025 → 2026), municipal area diverges from cadastral by 39.9 sq.m"
+    },
+    {
+      "time": "09:31",
+      "actor": "AI",
+      "text": "GCP validation completed for parcel boundaries",
+      "detail": "8 ground control points cross-checked against Survey-of-India CORS station (RTK horizontal accuracy 0.02–0.03m)"
+    }
+  ],
+  "sources": [
+    {
+      "name": "Drone Imagery",
+      "type": "High-res imagery",
+      "records": 5,
+      "last": "2024-02-10",
+      "crs": "Local grid",
+      "quality": 93,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "Orthorectified Imagery (ORI)",
+      "type": "Remote sensing / imagery",
+      "records": 5,
+      "last": "2024-02-10",
+      "crs": "WGS84 / UTM44N",
+      "quality": 95,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "DSM / DTM Datasets",
+      "type": "Elevation surface",
+      "records": 5,
+      "last": "2024-02-10",
+      "crs": "WGS84 (EGM2008)",
+      "quality": 92,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "Existing Cadastral Maps",
+      "type": "Survey / geometry",
+      "records": 5,
+      "last": "2024-03-01",
+      "crs": "WGS84 / UTM44N",
+      "quality": 98,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "Revenue Records",
+      "type": "Legal / deeds",
+      "records": 6,
+      "last": "2024-03-01",
+      "crs": "—",
+      "quality": 95,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "Municipal GIS Layers",
+      "type": "Property attributes",
+      "records": 5,
+      "last": "2024-03-01",
+      "crs": "WGS84",
+      "quality": 91,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "Utility Network Data",
+      "type": "Infrastructure / utilities",
+      "records": 5,
+      "last": "2024-02-11",
+      "crs": "WGS84",
+      "quality": 82,
+      "reliability": "Medium",
+      "status": "Synced"
+    },
+    {
+      "name": "Ground Truthing (GT)",
+      "type": "Field verification",
+      "records": 8,
+      "last": "2024-02-12",
+      "crs": "WGS84",
+      "quality": 90,
+      "reliability": "High",
+      "status": "Synced"
+    },
+    {
+      "name": "GNSS / CORS Survey",
+      "type": "Geodetic control",
+      "records": 7,
+      "last": "2024-02-12",
+      "crs": "WGS84 / ITRF",
+      "quality": 99,
+      "reliability": "High",
+      "status": "Synced"
+    }
+  ]
+}
